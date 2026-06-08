@@ -1,0 +1,164 @@
+[
+  {
+    "id": "prepaga-digital",
+    "name": "Prepaga Digital",
+    "shortName": "Prepaga",
+    "tagline": "Gestión integral de prepagas médicas",
+    "description": "Plataforma completa para administrar afiliados, beneficiarios, pólizas digitales y cobertura médica. Con firma electrónica, notificaciones WhatsApp y portal web para consultas.",
+    "icon": "Heart",
+    "color": "#ef4444",
+    "features": [
+      "Gestión de afiliados y beneficiarios",
+      "Pólizas digitales con firma electrónica PAdES",
+      "Portal web de consulta de cobertura",
+      "Notificaciones WhatsApp y OTP",
+      "Generación de PDFs profesionales",
+      "Multi-idioma: español, inglés, portugués"
+    ],
+    "targetAudience": ["Cooperativas de seguros médicos", "Mutuales de salud", "Empresas con planes de salud"],
+    "pricing": {
+      "monthly": 850000,
+      "annual": 8500000,
+      "currency": "PYG",
+      "popular": false
+    },
+    "badge": "",
+    "demoUrl": "#",
+    "order": 1
+  },
+  {
+    "id": "sishoras",
+    "name": "SisHoras 2.0",
+    "shortName": "SisHoras",
+    "tagline": "Control biométrico de asistencia en tiempo real",
+    "description": "Sistema de asistencia con integración directa a relojes biométricos ZKTeco. Dashboard en tiempo real, reportes automáticos y notificaciones multicanal.",
+    "icon": "Clock",
+    "color": "#6366f1",
+    "features": [
+      "Sincronización con relojes ZKTeco",
+      "Dashboard KPIs en tiempo real",
+      "Reportes PDF formato ZKTeco",
+      "Notificaciones Email, WhatsApp, Telegram",
+      "Gestión de permisos y ausencias",
+      "Analytics por empleado con gráficas"
+    ],
+    "targetAudience": ["Empresas 50-2000 empleados", "Instituciones con control biométrico", "Fábricas y plantas industriales"],
+    "pricing": {
+      "monthly": 650000,
+      "annual": 6500000,
+      "currency": "PYG",
+      "popular": true
+    },
+    "badge": "Más Popular",
+    "demoUrl": "#",
+    "order": 2
+  },
+  {
+    "id": "ticket-v2",
+    "name": "Ticket v2",
+    "shortName": "Tickets",
+    "tagline": "Gestión inteligente de turnos y colas",
+    "description": "Sistema de gestión de turnos con paneles configurables, anuncios por voz multiidioma y múltiples puntos de atención. Ideal para oficinas de atención al público.",
+    "icon": "Ticket",
+    "color": "#06b6d4",
+    "features": [
+      "Generación de tickets por servicio",
+      "Paneles configurables por perfil",
+      "Anuncios por voz en 3 idiomas",
+      "Múltiples puntos de atención",
+      "Vista pública de llamados",
+      "Integraciones REST y webhooks"
+    ],
+    "targetAudience": ["Municipalidades", "Hospitales y centros de salud", "Bancos y financieras", "Oficinas públicas"],
+    "pricing": {
+      "monthly": 550000,
+      "annual": 5500000,
+      "currency": "PYG",
+      "popular": false
+    },
+    "badge": "",
+    "demoUrl": "#",
+    "order": 3
+  },
+  {
+    "id": "comedor",
+    "name": "SysComedor",
+    "shortName": "Comedor",
+    "tagline": "Control total de comedores y cantinas",
+    "description": "Gestión integral de comedores institucionales: menús, reservas, stock, ventas y facturación electrónica SIFEN. Soporte para venta por kilo, menú y producto.",
+    "icon": "UtensilsCrossed",
+    "color": "#f59e0b",
+    "features": [
+      "Menús diarios/semanales con cupos",
+      "Reservas anticipadas con corte horario",
+      "Caja rápida y venta por kilo",
+      "Inventario y recetas con costos",
+      "Facturación electrónica DNIT/SIFEN",
+      "Cuentas mensuales tipo libreta"
+    ],
+    "targetAudience": ["Comedores empresariales", "Comedores escolares y hospitalarios", "Restaurantes de menú del día", "Cantinas institucionales"],
+    "pricing": {
+      "monthly": 450000,
+      "annual": 4500000,
+      "currency": "PYG",
+      "popular": false
+    },
+    "badge": "Nuevo",
+    "demoUrl": "#",
+    "order": 4
+  },
+  {
+    "id": "visioncore",
+    "name": "VisionCore",
+    "shortName": "Cámaras",
+    "tagline": "Videovigilancia centralizada y profesional",
+    "description": "Plataforma centralizada para gestión de NVRs Hikvision. Streaming en vivo, grabaciones, control PTZ y roles granulares. Reemplaza software propietario con interfaz web moderna.",
+    "icon": "Camera",
+    "color": "#10b981",
+    "features": [
+      "Múltiples NVRs Hikvision (62+ canales)",
+      "Streaming vivo HLS/WebRTC",
+      "Reproducción de grabaciones",
+      "Control PTZ para cámaras motorizadas",
+      "4 roles con permisos granulares",
+      "Logs de auditoría completos"
+    ],
+    "targetAudience": ["Empresas multi-sucursal", "Bancos e instituciones financieras", "Centros de monitoreo", "Hospitales y corporativos"],
+    "pricing": {
+      "monthly": 750000,
+      "annual": 7500000,
+      "currency": "PYG",
+      "popular": false
+    },
+    "badge": "",
+    "demoUrl": "#",
+    "order": 5
+  },
+  {
+    "id": "rrhh-completo",
+    "name": "RRHH Integral",
+    "shortName": "RRHH",
+    "tagline": "Recursos Humanos completo para Paraguay",
+    "description": "Sistema integral de RRHH: asistencia biométrica, nómina con IPS, vacaciones, expediente digital, evaluaciones y cumplimiento normativo MTESS/REOP completo.",
+    "icon": "Users",
+    "color": "#8b5cf6",
+    "features": [
+      "Nómina automática con aportes IPS",
+      "Expediente digital con firma electrónica",
+      "Vacaciones, permisos y ausencias",
+      "Evaluaciones de competencias",
+      "Comunicaciones MTESS/REOP automáticas",
+      "Multiempresa y multisucursal"
+    ],
+    "targetAudience": ["Empresas 100-2000+ empleados", "Organismos públicos", "Cooperativas y mutuales", "Grupos empresariales"],
+    "pricing": {
+      "monthly": 1200000,
+      "annual": 12000000,
+      "currency": "PYG",
+      "popular": false
+    },
+    "badge": "Premium",
+    "demoUrl": "#",
+    "order": 6
+  }
+]

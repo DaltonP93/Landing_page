@@ -1,0 +1,100 @@
+{
+  "company": {
+    "name": "NovaTech Paraguay",
+    "slogan": "Soluciones digitales que transforman tu empresa",
+    "description": "Desarrollamos software empresarial a medida para empresas paraguayas. Automatización, control y eficiencia con tecnología de última generación.",
+    "email": "contacto@novatechpy.com",
+    "phone": "+595 981 234567",
+    "whatsapp": "+595981234567",
+    "address": "Asunción, Paraguay",
+    "logo": "/logo.svg"
+  },
+  "hero": {
+    "title": "Software Empresarial",
+    "titleHighlight": "Hecho en Paraguay",
+    "subtitle": "Automatizamos procesos, controlamos operaciones y potenciamos tu negocio con soluciones digitales de clase mundial.",
+    "ctaText": "Ver Soluciones",
+    "ctaSecondary": "Hablar con un Asesor"
+  },
+  "stats": [
+    { "value": "50+", "label": "Empresas confían en nosotros" },
+    { "value": "6", "label": "Productos especializados" },
+    { "value": "99.9%", "label": "Uptime garantizado" },
+    { "value": "24/7", "label": "Soporte técnico" }
+  ],
+  "whyUs": [
+    {
+      "icon": "Shield",
+      "title": "Seguridad Total",
+      "description": "Cumplimiento normativo paraguayo (MTESS, DNIT, IPS). Encriptación y auditoría completa."
+    },
+    {
+      "icon": "Zap",
+      "title": "Implementación Rápida",
+      "description": "Tu sistema funcionando en días, no meses. Migración asistida desde cualquier plataforma."
+    },
+    {
+      "icon": "Headphones",
+      "title": "Soporte Local",
+      "description": "Equipo técnico en Paraguay. Soporte en español, respuesta inmediata vía WhatsApp."
+    },
+    {
+      "icon": "TrendingUp",
+      "title": "Escalable",
+      "description": "Crece con tu empresa. Desde 10 hasta 10,000 empleados sin cambiar de plataforma."
+    }
+  ],
+  "testimonials": [
+    {
+      "name": "Carlos Benítez",
+      "role": "Gerente de RRHH",
+      "company": "Cooperativa Nacional",
+      "text": "SisHoras transformó completamente nuestro control de asistencia. Pasamos de planillas manuales a reportes automáticos en tiempo real.",
+      "avatar": "CB"
+    },
+    {
+      "name": "María González",
+      "role": "Directora Administrativa",
+      "company": "Hospital Regional",
+      "text": "El sistema de gestión de comedores nos ahorra horas de trabajo diario. La integración con facturación electrónica es impecable.",
+      "avatar": "MG"
+    },
+    {
+      "name": "Roberto Acosta",
+      "role": "Jefe de Seguridad",
+      "company": "Banco Cooperativo",
+      "text": "VisionCore nos permite monitorear todas las sucursales desde un solo panel. La calidad del streaming y la facilidad de uso son excepcionales.",
+      "avatar": "RA"
+    }
+  ],
+  "faq": [
+    {
+      "question": "¿Cómo funciona la implementación?",
+      "answer": "Realizamos un diagnóstico inicial gratuito, configuramos el sistema según tus necesidades, migramos datos existentes y capacitamos a tu equipo. Todo en un plazo de 5-15 días hábiles según la complejidad."
+    },
+    {
+      "question": "¿Qué pasa si necesito personalizar un módulo?",
+      "answer": "Todos nuestros productos son personalizables. Podemos adaptar flujos, reportes, integraciones y diseño visual a las necesidades específicas de tu empresa."
+    },
+    {
+      "question": "¿Ofrecen período de prueba?",
+      "answer": "Sí, ofrecemos 15 días de prueba gratuita en todos nuestros productos. Te creamos una cuenta demo al instante y recibís el usuario y contraseña por email, sin tarjeta de crédito ni compromiso."
+    },
+    {
+      "question": "¿Los datos están seguros?",
+      "answer": "Utilizamos encriptación de grado bancario, backups automáticos diarios, y cumplimos con todas las normativas paraguayas de protección de datos."
+    },
+    {
+      "question": "¿Se integra con otros sistemas?",
+      "answer": "Sí, nuestros productos ofrecen APIs REST completas para integrarse con ERPs, sistemas contables, nómina y cualquier plataforma que utilices."
+    }
+  ],
+  "footer": {
+    "tagline": "Transformando empresas paraguayas con tecnología de clase mundial.",
+    "socialLinks": {
+      "instagram": "#",
+      "linkedin": "#",
+      "facebook": "#"
+    }
+  }
+}
