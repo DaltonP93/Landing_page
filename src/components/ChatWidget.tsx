@@ -79,17 +79,32 @@ export default function ChatWidget() {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, typing]);
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!input.trim()) return;
     const userMsg = input.trim();
     setInput('');
-    setMessages((prev) => [...prev, { role: 'user', text: userMsg }]);
+    const history: Message[] = [...messages, { role: 'user', text: userMsg }];
+    setMessages(history);
     setTyping(true);
 
-    setTimeout(() => {
+    try {
+      // Convierte el historial al formato de la IA (descarta el saludo inicial del bot)
+      const apiMessages = history
+        .filter((m, i) => !(i === 0 && m.role === 'bot'))
+        .map((m) => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text }));
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: apiMessages }),
+      });
+      const data = await res.json().catch(() => ({}));
+      const reply = data.reply || generateBotResponse(userMsg);
+      setMessages((prev) => [...prev, { role: 'bot', text: reply }]);
+    } catch {
       setMessages((prev) => [...prev, { role: 'bot', text: generateBotResponse(userMsg) }]);
+    } finally {
       setTyping(false);
-    }, 600 + Math.random() * 500);
+    }
   };
 
   const renderText = (text: string) => {

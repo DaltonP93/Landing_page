@@ -9,7 +9,12 @@ completo** para editar todo el contenido sin tocar código.
 
 - **Diseño futurista sci-fi** — glassmorphism, orbes 3D, partículas animadas, glow neón, gradientes animados.
 - **CMS por JSON + API REST** — todo el contenido vive en `src/data/*.json` y se edita desde `/admin`.
-- **Panel admin integral** (`/admin`) con 6 módulos:
+- **Dashboard de métricas** — KPIs de ventas, leads, conversión e ingresos, con gráficas por producto.
+- **Chat con IA (agente de ventas)** — atiende, recomienda, responde y **capta los leads** (email/teléfono),
+  guardándolos y avisando al equipo por WhatsApp. Soporta Anthropic y OpenAI (con bot de respaldo).
+- **Blog del CEO** — gestión de artículos en Markdown + páginas públicas (`/blog`) con SEO y JSON-LD.
+- **Marketing** — exportación de audiencias (emails/teléfonos SHA256) para **Google Ads Customer Match** y **Meta Custom Audiences**.
+- **Panel admin integral** (`/admin`) con 9 módulos:
   - **Productos** — alta/baja/edición, **imágenes** (URL o subida), ícono, color, badge, precios.
   - **Contenido** — empresa, hero, stats, ventajas, testimonios, FAQ, footer/redes, **integraciones** y **cobros**.
   - **Promociones** — ofertas con descuento **por tiempo limitado** (cuenta regresiva en la landing).

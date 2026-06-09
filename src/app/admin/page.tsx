@@ -5,7 +5,8 @@ import {
   Save, Plus, Trash2, ArrowLeft, Eye, Package, Settings2,
   Users as UsersIcon, LogOut, ChevronDown, RefreshCw, Search,
   Lock, Tag, Megaphone, CreditCard, Upload, Copy, Power,
-  Image as ImageIcon, Link2,
+  Image as ImageIcon, Link2, LayoutDashboard, Newspaper, Download,
+  Bot, TrendingUp,
 } from 'lucide-react';
 import { ICON_NAMES, getIcon } from '@/lib/icons';
 
@@ -81,7 +82,18 @@ interface Demo {
   status: 'active' | 'expired' | 'converted';
 }
 
-type Tab = 'productos' | 'sitio' | 'promociones' | 'campanas' | 'cobros' | 'leads';
+interface BlogPost {
+  id: string; slug: string; title: string; excerpt: string; content: string;
+  author: string; coverImage: string; tags: string[]; published: boolean;
+  publishedAt: string; seoDescription: string;
+}
+
+interface ChatLead {
+  id: string; email: string; phone: string; name: string;
+  interest: string; firstSeen: string; lastMessage: string; transcript: string;
+}
+
+type Tab = 'dashboard' | 'productos' | 'sitio' | 'promociones' | 'campanas' | 'marketing' | 'cobros' | 'leads' | 'blog';
 
 /* ─────────────────── Estilos reutilizables ─────────────────── */
 
@@ -165,7 +177,9 @@ export default function AdminPage() {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [subs, setSubs] = useState<Subscription[]>([]);
-  const [tab, setTab] = useState<Tab>('productos');
+  const [blog, setBlog] = useState<BlogPost[]>([]);
+  const [chatLeads, setChatLeads] = useState<ChatLead[]>([]);
+  const [tab, setTab] = useState<Tab>('dashboard');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [editing, setEditing] = useState<string | null>(null);
@@ -191,6 +205,11 @@ export default function AdminPage() {
     fetch('/api/billing', { headers: { 'x-api-key': key } })
       .then((r) => (r.ok ? r.json() : []))
       .then(setSubs)
+      .catch(() => {});
+    fetch('/api/blog').then((r) => r.json()).then(setBlog).catch(() => {});
+    fetch('/api/chat', { headers: { 'x-api-key': key } })
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setChatLeads)
       .catch(() => {});
   }, []);
 
@@ -271,6 +290,30 @@ export default function AdminPage() {
     });
     setSaving(false);
     flash(res.ok ? '✓ Campañas guardadas' : '✗ Error al guardar');
+  };
+
+  const saveBlog = async () => {
+    setSaving(true);
+    const res = await fetch('/api/blog', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+      body: JSON.stringify(blog),
+    });
+    setSaving(false);
+    flash(res.ok ? '✓ Blog guardado' : '✗ Error al guardar');
+  };
+
+  const downloadAudience = async (type: 'google' | 'meta') => {
+    const res = await fetch(`/api/marketing/audience?type=${type}`, { headers: { 'x-api-key': apiKey } });
+    if (!res.ok) { flash('✗ Error al exportar'); return; }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `audiencia-${type}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    flash('✓ Audiencia exportada');
   };
 
   const patchSub = async (id: string, body: { status?: string; accessEnabled?: boolean }) => {
@@ -396,12 +439,15 @@ export default function AdminPage() {
       <div className="max-w-7xl mx-auto px-4 pt-6">
         <div className="flex flex-wrap gap-1 p-1 rounded-xl glass border border-border/20">
           {([
+            ['dashboard', 'Dashboard', LayoutDashboard, null],
             ['productos', 'Productos', Package, products.length],
             ['sitio', 'Contenido', Settings2, null],
             ['promociones', 'Promociones', Tag, promotions.length],
             ['campanas', 'Campañas', Megaphone, campaigns.length],
+            ['marketing', 'Marketing', TrendingUp, null],
             ['cobros', 'Cobros', CreditCard, subs.filter((s) => s.status === 'pending').length],
-            ['leads', 'Leads / Demos', UsersIcon, activeDemos],
+            ['leads', 'Leads', UsersIcon, activeDemos + chatLeads.length],
+            ['blog', 'Blog', Newspaper, blog.length],
           ] as [Tab, string, React.ComponentType<React.SVGProps<SVGSVGElement>>, number | null][]).map(([t, lbl, Ico, count]) => (
             <button
               key={t}
@@ -418,6 +464,72 @@ export default function AdminPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* ═══════════ DASHBOARD ═══════════ */}
+        {tab === 'dashboard' && (() => {
+          const activeSubs = subs.filter((s) => s.status === 'active');
+          const revenue = activeSubs.reduce((t, s) => t + s.amount, 0);
+          const totalLeads = demos.length + chatLeads.length;
+          const conv = demos.length ? Math.round((subs.length / demos.length) * 100) : 0;
+          const byProductLeads = products.map((p) => ({ name: p.shortName, value: demos.filter((d) => d.productId === p.id).length }));
+          const byProductRev = products.map((p) => ({ name: p.shortName, value: activeSubs.filter((s) => s.productId === p.id).reduce((t, s) => t + s.amount, 0) }));
+          const maxLeads = Math.max(1, ...byProductLeads.map((x) => x.value));
+          const maxRev = Math.max(1, ...byProductRev.map((x) => x.value));
+          const withPromo = subs.filter((s) => s.promoCode).length;
+          const kpis: [string, string, string][] = [
+            ['Leads totales', String(totalLeads), 'text-neon-blue'],
+            ['Demos activas', String(demos.filter((d) => d.status === 'active').length), 'text-neon-green'],
+            ['Contrataciones', String(subs.length), 'text-neon-purple'],
+            ['Ingresos activos', `Gs. ${revenue.toLocaleString('es-PY')}`, 'text-white'],
+            ['Conversión', `${conv}%`, 'text-neon-pink'],
+          ];
+          return (
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                {kpis.map(([lbl, val, cls]) => (
+                  <div key={lbl} className={card}>
+                    <div className={`text-xl font-bold ${cls}`}>{val}</div>
+                    <div className="text-[11px] text-muted/50 mt-1">{lbl}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className={card}>
+                  <h3 className="font-semibold text-sm mb-4 flex items-center gap-2"><UsersIcon className="w-4 h-4 text-neon-blue" /> Leads por producto</h3>
+                  <div className="space-y-2.5">
+                    {byProductLeads.map((x) => (
+                      <div key={x.name} className="flex items-center gap-3">
+                        <span className="w-20 text-xs text-muted/60 shrink-0 truncate">{x.name}</span>
+                        <div className="flex-1 h-2 rounded-full bg-white/5 overflow-hidden"><div className="h-full bg-gradient-to-r from-neon-purple to-neon-blue rounded-full" style={{ width: `${(x.value / maxLeads) * 100}%` }} /></div>
+                        <span className="w-8 text-right text-xs text-white">{x.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className={card}>
+                  <h3 className="font-semibold text-sm mb-4 flex items-center gap-2"><CreditCard className="w-4 h-4 text-neon-green" /> Ingresos por producto</h3>
+                  <div className="space-y-2.5">
+                    {byProductRev.map((x) => (
+                      <div key={x.name} className="flex items-center gap-3">
+                        <span className="w-20 text-xs text-muted/60 shrink-0 truncate">{x.name}</span>
+                        <div className="flex-1 h-2 rounded-full bg-white/5 overflow-hidden"><div className="h-full bg-gradient-to-r from-neon-green to-neon-blue rounded-full" style={{ width: `${(x.value / maxRev) * 100}%` }} /></div>
+                        <span className="w-20 text-right text-[11px] text-white">{(x.value / 1000).toLocaleString('es-PY')}k</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className={card}><div className="text-lg font-bold text-white">{demos.length}</div><div className="text-[11px] text-muted/50 mt-1">Demos solicitadas</div></div>
+                <div className={card}><div className="text-lg font-bold text-neon-blue">{chatLeads.length}</div><div className="text-[11px] text-muted/50 mt-1">Leads del chat IA</div></div>
+                <div className={card}><div className="text-lg font-bold text-neon-pink">{withPromo}</div><div className="text-[11px] text-muted/50 mt-1">Ventas con promoción</div></div>
+                <div className={card}><div className="text-lg font-bold text-neon-purple">{campaigns.filter((c) => c.status === 'active').length}</div><div className="text-[11px] text-muted/50 mt-1">Campañas activas</div></div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* ═══════════ PRODUCTOS ═══════════ */}
         {tab === 'productos' && (
           <div className="space-y-3">
@@ -879,6 +991,96 @@ export default function AdminPage() {
                 </table>
               </div>
             )}
+
+            {chatLeads.length > 0 && (
+              <div className="rounded-xl glass border border-border/20 overflow-hidden overflow-x-auto">
+                <div className="px-4 py-3 border-b border-border/20 flex items-center gap-2 text-sm font-semibold"><Bot className="w-4 h-4 text-neon-blue" /> Leads captados por el chat IA</div>
+                <table className="w-full text-sm">
+                  <thead><tr className="border-b border-border/20 text-left text-[11px] uppercase tracking-wide text-muted/50">
+                    <th className="p-3 font-medium">Contacto</th><th className="p-3 font-medium">Interés</th><th className="p-3 font-medium">Fecha</th>
+                  </tr></thead>
+                  <tbody>
+                    {chatLeads.slice().reverse().map((l) => (
+                      <tr key={l.id} className="border-b border-border/10 hover:bg-white/[0.02]">
+                        <td className="p-3"><div className="text-neon-blue">{l.email}</div><div className="text-xs text-muted/50">{l.phone || '—'}</div></td>
+                        <td className="p-3 text-muted/70 max-w-xs"><div className="truncate">{l.interest}</div></td>
+                        <td className="p-3 text-xs text-muted/40">{new Date(l.firstSeen).toLocaleDateString('es-PY')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ═══════════ MARKETING ═══════════ */}
+        {tab === 'marketing' && (
+          <div className="space-y-5">
+            <div className={card}>
+              <h3 className="font-semibold text-sm mb-1 flex items-center gap-2"><Download className="w-4 h-4 text-neon-blue" /> Audiencias para publicidad</h3>
+              <p className="text-xs text-muted/50 mb-4">Exportá tus leads (demos + contrataciones + chat) con email y teléfono hasheados en SHA256, listos para subir como audiencia en Google Ads o Meta.</p>
+              <div className="flex flex-wrap gap-3">
+                <button onClick={() => downloadAudience('google')} className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-border/30 text-sm text-white hover:border-neon-blue/40 hover:shadow-[0_0_15px_rgba(0,212,255,0.1)] transition-all"><Download className="w-4 h-4" /> Google Ads (Customer Match)</button>
+                <button onClick={() => downloadAudience('meta')} className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-border/30 text-sm text-white hover:border-neon-purple/40 hover:shadow-[0_0_15px_rgba(124,58,237,0.1)] transition-all"><Download className="w-4 h-4" /> Meta (Custom Audience)</button>
+              </div>
+            </div>
+            <div className={card}>
+              <h3 className="font-semibold text-sm mb-1">Píxeles y seguimiento</h3>
+              <p className="text-xs text-muted/50 mb-3">El seguimiento se activa cargando los IDs en <button onClick={() => setTab('sitio')} className="text-neon-blue underline">Contenido → Integraciones</button>.</p>
+              <div className="grid sm:grid-cols-2 gap-2 text-xs">
+                {([['Google Analytics', 'googleAnalyticsId'], ['Google Tag Manager', 'googleTagManagerId'], ['Google Ads', 'googleAdsConversionId'], ['Facebook Pixel', 'facebookPixelId']] as [string, string][]).map(([lbl, k]) => (
+                  <div key={k} className="flex items-center justify-between p-2 rounded-lg bg-surface/40 border border-border/20"><span className="text-muted/70">{lbl}</span><span className={site?.integrations?.[k] ? 'text-neon-green' : 'text-muted/40'}>{site?.integrations?.[k] ? '✓ activo' : 'sin configurar'}</span></div>
+                ))}
+              </div>
+            </div>
+            <div className={card}>
+              <h3 className="font-semibold text-sm mb-3">Generación de leads</h3>
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div><div className="text-xl font-bold text-neon-green">{demos.length}</div><div className="text-[11px] text-muted/50">Demos</div></div>
+                <div><div className="text-xl font-bold text-neon-blue">{chatLeads.length}</div><div className="text-[11px] text-muted/50">Chat IA</div></div>
+                <div><div className="text-xl font-bold text-neon-purple">{subs.length}</div><div className="text-[11px] text-muted/50">Contrataciones</div></div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════ BLOG ═══════════ */}
+        {tab === 'blog' && (
+          <div className="space-y-3">
+            <p className="text-xs text-muted/50">Artículos del blog del CEO. El contenido admite Markdown (## título, **negrita**, - listas, [texto](url)).</p>
+            {blog.map((post, i) => (
+              <div key={post.id} className={`${card} space-y-3`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <label className="flex items-center gap-1.5 text-xs text-muted/70 cursor-pointer"><input type="checkbox" checked={post.published} onChange={(e) => { const a = [...blog]; a[i] = { ...a[i], published: e.target.checked }; setBlog(a); }} className="w-4 h-4 rounded accent-neon-purple" /> Publicado</label>
+                    <span className="text-[11px] text-muted/40">/blog/{post.slug || '...'}</span>
+                  </div>
+                  <button onClick={() => setBlog(blog.filter((_, j) => j !== i))} className="p-2 text-muted/40 hover:text-neon-pink"><Trash2 className="w-4 h-4" /></button>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div><label className={label}>Título</label><input value={post.title} onChange={(e) => { const a = [...blog]; const slug = a[i].slug || e.target.value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); a[i] = { ...a[i], title: e.target.value, slug }; setBlog(a); }} className={input} /></div>
+                  <div><label className={label}>Slug (URL)</label><input value={post.slug} onChange={(e) => { const a = [...blog]; a[i] = { ...a[i], slug: e.target.value }; setBlog(a); }} className={input} /></div>
+                  <div><label className={label}>Autor</label><input value={post.author} onChange={(e) => { const a = [...blog]; a[i] = { ...a[i], author: e.target.value }; setBlog(a); }} className={input} /></div>
+                  <div><label className={label}>Fecha</label><input type="date" value={(post.publishedAt || '').slice(0, 10)} onChange={(e) => { const a = [...blog]; a[i] = { ...a[i], publishedAt: new Date(e.target.value).toISOString() }; setBlog(a); }} className={input} /></div>
+                  <div><label className={label}>Etiquetas (coma)</label><input value={post.tags.join(', ')} onChange={(e) => { const a = [...blog]; a[i] = { ...a[i], tags: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) }; setBlog(a); }} className={input} /></div>
+                  <div>
+                    <label className={label}>Imagen de portada</label>
+                    <div className="flex gap-2">
+                      <input value={post.coverImage} onChange={(e) => { const a = [...blog]; a[i] = { ...a[i], coverImage: e.target.value }; setBlog(a); }} placeholder="URL o subir →" className={input} />
+                      <label className="flex items-center gap-1 px-3 py-2 rounded-lg border border-border/30 text-xs text-muted/70 hover:text-neon-blue cursor-pointer shrink-0"><Upload className="w-3.5 h-3.5" /><input type="file" accept="image/*" className="hidden" onChange={async (e) => { const f = e.target.files?.[0]; if (f) { const url = await uploadImage(f); if (url) { const a = [...blog]; a[i] = { ...a[i], coverImage: url }; setBlog(a); } } }} /></label>
+                    </div>
+                  </div>
+                </div>
+                <div><label className={label}>Extracto</label><textarea value={post.excerpt} onChange={(e) => { const a = [...blog]; a[i] = { ...a[i], excerpt: e.target.value }; setBlog(a); }} rows={2} className={`${input} resize-none`} /></div>
+                <div><label className={label}>Contenido (Markdown)</label><textarea value={post.content} onChange={(e) => { const a = [...blog]; a[i] = { ...a[i], content: e.target.value }; setBlog(a); }} rows={8} className={`${input} resize-none font-mono text-xs`} /></div>
+                <div><label className={label}>Descripción SEO</label><input value={post.seoDescription} onChange={(e) => { const a = [...blog]; a[i] = { ...a[i], seoDescription: e.target.value }; setBlog(a); }} className={input} /></div>
+              </div>
+            ))}
+            <div className="flex gap-3 pt-2">
+              <button onClick={() => setBlog([...blog, { id: `post-${Date.now()}`, slug: '', title: 'Nuevo artículo', excerpt: '', content: '## Título\n\nEscribí acá tu contenido en **Markdown**.', author: 'CEO', coverImage: '', tags: [], published: false, publishedAt: new Date().toISOString(), seoDescription: '' }])} className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-dashed border-border/40 text-muted/60 hover:text-neon-blue hover:border-neon-blue/40 transition-all text-sm"><Plus className="w-4 h-4" /> Nuevo artículo</button>
+              <button onClick={saveBlog} disabled={saving} className={btnPrimary}><Save className="w-4 h-4" /> {saving ? 'Guardando...' : 'Guardar blog'}</button>
+            </div>
           </div>
         )}
       </div>

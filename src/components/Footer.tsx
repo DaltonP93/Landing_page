@@ -36,6 +36,7 @@ export default function Footer() {
               <li><a href="#soluciones" className="text-muted/50 hover:text-neon-blue transition-colors">Soluciones</a></li>
               <li><a href="#precios" className="text-muted/50 hover:text-neon-blue transition-colors">Precios</a></li>
               <li><a href="#demo" className="text-muted/50 hover:text-neon-blue transition-colors">Demo Gratis</a></li>
+              <li><a href="/blog" className="text-muted/50 hover:text-neon-blue transition-colors">Blog</a></li>
               <li><a href="#contacto" className="text-muted/50 hover:text-neon-blue transition-colors">Contacto</a></li>
             </ul>
           </div>
