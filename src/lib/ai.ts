@@ -1,4 +1,5 @@
 import site from '@/data/site.json';
+import { getSecret } from './secrets';
 
 type Format = 'openai' | 'anthropic';
 
@@ -34,7 +35,7 @@ export interface ChatMsg { role: 'user' | 'assistant'; content: string }
 interface AIConfig { provider?: string; model?: string; baseUrl?: string; format?: Format }
 
 function resolveKey(envKeys: string[]): string {
-  for (const k of envKeys) if (process.env[k]) return process.env[k] as string;
+  for (const k of envKeys) { const v = getSecret(k); if (v) return v; }
   return '';
 }
 

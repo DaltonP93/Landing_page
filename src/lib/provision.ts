@@ -1,18 +1,19 @@
 import site from '@/data/site.json';
 import nodemailer from 'nodemailer';
+import { getSecret } from './secrets';
 
 /** Envía un email de aviso al equipo (NOTIFICATION_EMAIL o SMTP_USER). Fire-and-forget. */
 export async function sendTeamEmail(subject: string, text: string): Promise<void> {
-  const host = process.env.SMTP_HOST;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const to = process.env.NOTIFICATION_EMAIL || user;
+  const host = getSecret('SMTP_HOST');
+  const user = getSecret('SMTP_USER');
+  const pass = getSecret('SMTP_PASS');
+  const to = getSecret('NOTIFICATION_EMAIL') || user;
   if (!host || !user || !pass || !to) return;
   try {
-    const port = Number(process.env.SMTP_PORT || '587');
+    const port = Number(getSecret('SMTP_PORT') || '587');
     const transporter = nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
     await transporter.sendMail({
-      from: `"${site.company.name}" <${process.env.EMAIL_FROM || user}>`,
+      from: `"${site.company.name}" <${getSecret('EMAIL_FROM') || user}>`,
       to,
       subject,
       text,
@@ -52,7 +53,7 @@ export async function setProductAccess(
   payload: { email: string; company: string; enabled: boolean; plan?: string; until?: string }
 ): Promise<boolean> {
   const { apiUrl } = getProductUrls(productId);
-  const apiKey = process.env.DEMO_PROVISION_API_KEY;
+  const apiKey = getSecret('DEMO_PROVISION_API_KEY');
   if (!apiKey || apiUrl === '#') return false;
   try {
     const res = await fetch(`${apiUrl}/api/access`, {
@@ -71,9 +72,9 @@ export async function notifyTeam(message: string): Promise<void> {
   // Email (independiente de WhatsApp)
   sendTeamEmail(`${site.company.name} — Notificación`, message);
 
-  const token = process.env.WHATSAPP_API_TOKEN;
-  const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  const to = process.env.NOTIFICATION_PHONE;
+  const token = getSecret('WHATSAPP_API_TOKEN');
+  const phoneId = getSecret('WHATSAPP_PHONE_NUMBER_ID');
+  const to = getSecret('NOTIFICATION_PHONE');
   if (!token || !phoneId || !to) return;
   try {
     await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`, {

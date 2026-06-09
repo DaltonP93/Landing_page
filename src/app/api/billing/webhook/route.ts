@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { readData, writeData } from '@/lib/store';
 import { setProductAccess, notifyTeam } from '@/lib/provision';
+import { getSecret } from '@/lib/secrets';
 import type { Subscription } from '../checkout/route';
 
 const SUBS_PATH = 'data/subscriptions.json';
 
 /** Verifica la firma de Stripe (t=...,v1=...) si hay secret configurado. */
 function stripeVerified(raw: string, header: string | null): boolean {
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  const secret = getSecret('STRIPE_WEBHOOK_SECRET');
   if (!secret) return true; // sin secret no verificamos (modo prueba)
   if (!header) return false;
   const parts = Object.fromEntries(header.split(',').map((p) => p.split('=')));
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
   } else if (body.operation && (body.operation as { shop_process_id?: unknown }).shop_process_id) {
     paymentRef = String((body.operation as { shop_process_id: unknown }).shop_process_id);
   } else if (body.subscriptionId) {
-    if (body.secret !== process.env.BILLING_WEBHOOK_SECRET) {
+    if (body.secret !== getSecret('BILLING_WEBHOOK_SECRET')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     subscriptionId = String(body.subscriptionId);

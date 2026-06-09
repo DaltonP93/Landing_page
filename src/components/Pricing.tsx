@@ -4,12 +4,13 @@ import { useState } from 'react';
 import { Check, Zap, Crown, CreditCard } from 'lucide-react';
 import products from '@/data/products.json';
 import promotions from '@/data/promotions.json';
-import { formatPYG } from '@/lib/format';
+import { formatMoney, CURRENCIES } from '@/lib/currency';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { getPromoForProduct, applyDiscount, type Promotion } from '@/lib/promotions';
 
 export default function Pricing() {
   const [annual, setAnnual] = useState(false);
+  const [currency, setCurrency] = useState(CURRENCIES[0]);
   const { ref: headerRef, visible: headerVisible } = useScrollReveal<HTMLDivElement>();
   const sorted = [...products].sort((a, b) => a.order - b.order);
 
@@ -43,11 +44,25 @@ export default function Pricing() {
               Anual <span className="text-[10px] text-neon-green font-bold">-17%</span>
             </button>
           </div>
+
+          {CURRENCIES.length > 1 && (
+            <div className="mt-4 inline-flex items-center gap-1 p-1 rounded-lg border border-border/30 glass ml-0 sm:ml-3">
+              {CURRENCIES.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setCurrency(c)}
+                  className={`px-3 py-2 rounded-md text-xs font-medium transition-all duration-300 ${currency === c ? 'bg-gradient-to-r from-neon-blue to-neon-purple text-white' : 'text-muted hover:text-white'}`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {sorted.map((product, i) => (
-            <PricingCard key={product.id} product={product} annual={annual} index={i} />
+            <PricingCard key={product.id} product={product} annual={annual} currency={currency} index={i} />
           ))}
         </div>
       </div>
@@ -55,7 +70,7 @@ export default function Pricing() {
   );
 }
 
-function PricingCard({ product, annual, index }: { product: typeof products[0]; annual: boolean; index: number }) {
+function PricingCard({ product, annual, currency, index }: { product: typeof products[0]; annual: boolean; currency: string; index: number }) {
   const { ref, visible } = useScrollReveal<HTMLDivElement>();
   const base = annual ? product.pricing.annual : product.pricing.monthly;
   const isPopular = product.pricing.popular;
@@ -79,8 +94,8 @@ function PricingCard({ product, annual, index }: { product: typeof products[0]; 
         </div>
 
         <div className="mb-5">
-          {promo && <div className="text-sm text-muted/40 line-through">{formatPYG(base)}</div>}
-          <span className="text-3xl font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">{formatPYG(finalPrice)}</span>
+          {promo && <div className="text-sm text-muted/40 line-through">{formatMoney(base, currency)}</div>}
+          <span className="text-3xl font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">{formatMoney(finalPrice, currency)}</span>
           <span className="text-xs text-muted/50 ml-1">/{annual ? 'año' : 'mes'}</span>
         </div>
 

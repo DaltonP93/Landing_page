@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import products from '@/data/products.json';
 import site from '@/data/site.json';
 import { sendTeamEmail } from '@/lib/provision';
+import { getSecret } from '@/lib/secrets';
 
 const COMPANY = site.company.name;
 
@@ -83,7 +84,7 @@ function getProductUrls(productId: string): { appUrl: string; apiUrl: string } {
 
 async function createDemoInProduct(productId: string, account: DemoAccount) {
   const { apiUrl } = getProductUrls(productId);
-  const apiKey = process.env.DEMO_PROVISION_API_KEY;
+  const apiKey = getSecret('DEMO_PROVISION_API_KEY');
 
   if (!apiKey || apiUrl === '#') return;
 
@@ -109,11 +110,11 @@ async function createDemoInProduct(productId: string, account: DemoAccount) {
 }
 
 async function sendCredentialsEmail(account: DemoAccount) {
-  const smtpHost = process.env.SMTP_HOST;
-  const smtpPort = Number(process.env.SMTP_PORT || '587');
-  const smtpUser = process.env.SMTP_USER;
-  const smtpPass = process.env.SMTP_PASS;
-  const fromEmail = process.env.EMAIL_FROM || 'demo@novatechpy.com';
+  const smtpHost = getSecret('SMTP_HOST');
+  const smtpPort = Number(getSecret('SMTP_PORT') || '587');
+  const smtpUser = getSecret('SMTP_USER');
+  const smtpPass = getSecret('SMTP_PASS');
+  const fromEmail = getSecret('EMAIL_FROM') || 'demo@novatechpy.com';
 
   if (!smtpHost || !smtpUser || !smtpPass) return;
 
@@ -189,9 +190,9 @@ async function sendCredentialsEmail(account: DemoAccount) {
 }
 
 async function notifyTeam(account: DemoAccount) {
-  const whatsappToken = process.env.WHATSAPP_API_TOKEN;
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  const notificationPhone = process.env.NOTIFICATION_PHONE;
+  const whatsappToken = getSecret('WHATSAPP_API_TOKEN');
+  const phoneNumberId = getSecret('WHATSAPP_PHONE_NUMBER_ID');
+  const notificationPhone = getSecret('NOTIFICATION_PHONE');
 
   if (!whatsappToken || !phoneNumberId || !notificationPhone) return;
 

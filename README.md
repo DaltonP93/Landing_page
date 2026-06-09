@@ -16,6 +16,11 @@ completo** para editar todo el contenido sin tocar código.
 - **Embudo de conversión** en el dashboard (leads → demos → contrataciones → clientes activos) con % por paso.
 - **Sincronización de audiencias por API** — envío directo de leads a **Meta Custom Audiences** y **Google Ads Customer Match** (además del export CSV).
 - **Notificaciones por email + WhatsApp** al equipo en cada demo, contratación y lead del chat.
+- **Credenciales configurables desde el panel** (pestaña Ajustes) — IA, pagos, marketing, email y WhatsApp;
+  se guardan en el servidor (fuera del repo), enmascaradas, con prioridad sobre las variables de entorno.
+- **Sincronización automática diaria** de audiencias por cron (`/api/cron/sync-audiences`, Vercel Cron o crontab).
+- **Multimoneda (PYG / USD)** con tasa de cambio editable y conversión en vivo en la sección de precios.
+- **Historial de conversaciones del chat IA** por lead, visible y expandible en el panel.
 - **Blog del CEO** — gestión de artículos en Markdown + páginas públicas (`/blog`) con SEO y JSON-LD.
 - **Marketing** — exportación de audiencias (emails/teléfonos SHA256) para **Google Ads Customer Match** y **Meta Custom Audiences**.
 - **Panel admin integral** (`/admin`) con 9 módulos:

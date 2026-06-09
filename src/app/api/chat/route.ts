@@ -81,7 +81,18 @@ export async function POST(request: NextRequest) {
   const email = extractEmail(userText);
   if (email) {
     const leads = readData<ChatLead[]>(LEADS_PATH, []);
-    if (!leads.some((l) => l.email === email)) {
+    // Transcripción completa de la conversación (incluye la respuesta de la IA)
+    const fullTranscript = [...messages, { role: 'assistant' as const, content: reply }]
+      .map((m) => `${m.role === 'user' ? 'Cliente' : 'IA'}: ${m.content}`)
+      .join('\n');
+    const existing = leads.find((l) => l.email === email);
+    if (existing) {
+      // Upsert: actualizamos el historial completo y el último mensaje
+      existing.phone = existing.phone || extractPhone(userText) || '';
+      existing.lastMessage = lastUser.slice(0, 200);
+      existing.transcript = fullTranscript;
+      writeData(LEADS_PATH, leads);
+    } else {
       const lead: ChatLead = {
         id: crypto.randomUUID(),
         email,
@@ -90,7 +101,7 @@ export async function POST(request: NextRequest) {
         interest: lastUser.slice(0, 120),
         firstSeen: new Date().toISOString(),
         lastMessage: lastUser.slice(0, 200),
-        transcript: messages.slice(-8).map((m) => `${m.role === 'user' ? 'Cliente' : 'IA'}: ${m.content}`).join('\n'),
+        transcript: fullTranscript,
       };
       leads.push(lead);
       writeData(LEADS_PATH, leads);

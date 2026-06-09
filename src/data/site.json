@@ -110,6 +110,8 @@
   "billing": {
     "enabled": true,
     "currency": "PYG",
+    "currencies": ["PYG", "USD"],
+    "rates": { "PYG": 1, "USD": 0.00013 },
     "taxPercent": 10,
     "paymentMethods": ["transferencia", "tarjeta", "bancard"],
     "gateway": "manual",

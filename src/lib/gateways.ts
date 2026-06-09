@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import site from '@/data/site.json';
+import { getSecret } from './secrets';
 
 const BASE = (site.company.siteUrl || '').replace(/\/$/, '');
 
@@ -37,7 +38,7 @@ function manualPayment(): PaymentResult {
 
 /** Stripe Checkout Session vía API REST (sin SDK). Requiere STRIPE_SECRET_KEY. */
 async function stripePayment(order: PaymentOrder): Promise<PaymentResult> {
-  const key = process.env.STRIPE_SECRET_KEY;
+  const key = getSecret('STRIPE_SECRET_KEY');
   if (!key) return manualPayment();
 
   const zeroDecimal = ['PYG', 'JPY', 'CLP', 'VND'].includes(order.currency.toUpperCase());
@@ -70,11 +71,11 @@ async function stripePayment(order: PaymentOrder): Promise<PaymentResult> {
  * token = md5(private_key + shop_process_id + amount + currency)
  */
 async function bancardPayment(order: PaymentOrder): Promise<PaymentResult> {
-  const publicKey = process.env.BANCARD_PUBLIC_KEY;
-  const privateKey = process.env.BANCARD_PRIVATE_KEY;
+  const publicKey = getSecret('BANCARD_PUBLIC_KEY');
+  const privateKey = getSecret('BANCARD_PRIVATE_KEY');
   if (!publicKey || !privateKey) return manualPayment();
 
-  const apiBase = process.env.BANCARD_BASE_URL || 'https://vpos.infonet.com.py';
+  const apiBase = getSecret('BANCARD_BASE_URL') || 'https://vpos.infonet.com.py';
   const shopProcessId = Date.now();
   const amount = `${order.amount}.00`;
   const currency = order.currency.toUpperCase();

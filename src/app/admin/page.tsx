@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Fragment } from 'react';
 import {
   Save, Plus, Trash2, ArrowLeft, Eye, Package, Settings2,
   Users as UsersIcon, LogOut, ChevronDown, RefreshCw, Search,
   Lock, Tag, Megaphone, CreditCard, Upload, Copy, Power,
   Image as ImageIcon, Link2, LayoutDashboard, Newspaper, Download,
-  Bot, TrendingUp,
+  Bot, TrendingUp, KeyRound,
 } from 'lucide-react';
 import { ICON_NAMES, getIcon } from '@/lib/icons';
 
@@ -42,6 +42,7 @@ interface SiteData {
   billing: {
     enabled: boolean; currency: string; taxPercent: number; gateway: string;
     paymentMethods: string[]; bankInfo: string; checkoutNote: string; setupFee: number;
+    currencies: string[]; rates: Record<string, number>;
   };
   ai: { provider: string; model: string; baseUrl: string };
 }
@@ -94,7 +95,12 @@ interface ChatLead {
   interest: string; firstSeen: string; lastMessage: string; transcript: string;
 }
 
-type Tab = 'dashboard' | 'productos' | 'sitio' | 'promociones' | 'campanas' | 'marketing' | 'cobros' | 'leads' | 'blog';
+interface SecretGroup {
+  group: string;
+  keys: { name: string; label: string; configured: boolean; source: string; hint: string }[];
+}
+
+type Tab = 'dashboard' | 'productos' | 'sitio' | 'promociones' | 'campanas' | 'marketing' | 'cobros' | 'leads' | 'blog' | 'ajustes';
 
 /* ─────────────────── Estilos reutilizables ─────────────────── */
 
@@ -181,6 +187,9 @@ export default function AdminPage() {
   const [blog, setBlog] = useState<BlogPost[]>([]);
   const [chatLeads, setChatLeads] = useState<ChatLead[]>([]);
   const [tab, setTab] = useState<Tab>('dashboard');
+  const [openChat, setOpenChat] = useState<string | null>(null);
+  const [secrets, setSecretsState] = useState<SecretGroup[]>([]);
+  const [secretDraft, setSecretDraft] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [editing, setEditing] = useState<string | null>(null);
@@ -211,6 +220,10 @@ export default function AdminPage() {
     fetch('/api/chat', { headers: { 'x-api-key': key } })
       .then((r) => (r.ok ? r.json() : []))
       .then(setChatLeads)
+      .catch(() => {});
+    fetch('/api/secrets', { headers: { 'x-api-key': key } })
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setSecretsState)
       .catch(() => {});
   }, []);
 
@@ -322,6 +335,23 @@ export default function AdminPage() {
     const res = await fetch(`/api/marketing/sync?platform=${platform}`, { method: 'POST', headers: { 'x-api-key': apiKey } });
     const data = await res.json().catch(() => ({}));
     flash(data.ok ? `✓ ${data.received} contactos enviados a ${platform}` : `✗ ${data.error || 'Error'}`);
+  };
+
+  const saveSecrets = async () => {
+    setSaving(true);
+    const res = await fetch('/api/secrets', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+      body: JSON.stringify({ secrets: secretDraft }),
+    });
+    setSaving(false);
+    if (res.ok) {
+      setSecretDraft({});
+      fetch('/api/secrets', { headers: { 'x-api-key': apiKey } }).then((r) => r.json()).then(setSecretsState).catch(() => {});
+      flash('✓ Credenciales guardadas');
+    } else {
+      flash('✗ Error al guardar');
+    }
   };
 
   const patchSub = async (id: string, body: { status?: string; accessEnabled?: boolean }) => {
@@ -456,6 +486,7 @@ export default function AdminPage() {
             ['cobros', 'Cobros', CreditCard, subs.filter((s) => s.status === 'pending').length],
             ['leads', 'Leads', UsersIcon, activeDemos + chatLeads.length],
             ['blog', 'Blog', Newspaper, blog.length],
+            ['ajustes', 'Ajustes', KeyRound, null],
           ] as [Tab, string, React.ComponentType<React.SVGProps<SVGSVGElement>>, number | null][]).map(([t, lbl, Ico, count]) => (
             <button
               key={t}
@@ -825,6 +856,7 @@ export default function AdminPage() {
               <div className="grid sm:grid-cols-3 gap-4 mb-4">
                 <div><label className={label}>IVA (%)</label><input type="number" value={site.billing.taxPercent} onChange={(e) => setSiteField(['billing', 'taxPercent'], Number(e.target.value))} className={input} /></div>
                 <div><label className={label}>Costo de instalación (Gs.)</label><input type="number" value={site.billing.setupFee} onChange={(e) => setSiteField(['billing', 'setupFee'], Number(e.target.value))} className={input} /></div>
+                <div><label className={label}>Tasa USD (1 Gs. = ? USD)</label><input type="number" step="0.000001" value={site.billing.rates?.USD ?? 0} onChange={(e) => setSiteField(['billing', 'rates', 'USD'], Number(e.target.value))} className={input} /></div>
                 <div className="flex items-end"><label className="flex items-center gap-2 cursor-pointer text-sm text-muted/80"><input type="checkbox" checked={site.billing.enabled} onChange={(e) => setSiteField(['billing', 'enabled'], e.target.checked)} className="w-4 h-4 rounded accent-neon-purple" /> Cobros habilitados</label></div>
               </div>
               <div className="mb-4"><label className={label}>Medios de pago (separados por coma)</label><input value={site.billing.paymentMethods.join(', ')} onChange={(e) => setSiteField(['billing', 'paymentMethods'], e.target.value.split(',').map((s) => s.trim()).filter(Boolean))} className={input} placeholder="transferencia, tarjeta, bancard" /></div>
@@ -1060,15 +1092,23 @@ export default function AdminPage() {
                 <div className="px-4 py-3 border-b border-border/20 flex items-center gap-2 text-sm font-semibold"><Bot className="w-4 h-4 text-neon-blue" /> Leads captados por el chat IA</div>
                 <table className="w-full text-sm">
                   <thead><tr className="border-b border-border/20 text-left text-[11px] uppercase tracking-wide text-muted/50">
-                    <th className="p-3 font-medium">Contacto</th><th className="p-3 font-medium">Interés</th><th className="p-3 font-medium">Fecha</th>
+                    <th className="p-3 font-medium">Contacto</th><th className="p-3 font-medium">Interés</th><th className="p-3 font-medium">Fecha</th><th className="p-3 font-medium">Chat</th>
                   </tr></thead>
                   <tbody>
                     {chatLeads.slice().reverse().map((l) => (
-                      <tr key={l.id} className="border-b border-border/10 hover:bg-white/[0.02]">
-                        <td className="p-3"><div className="text-neon-blue">{l.email}</div><div className="text-xs text-muted/50">{l.phone || '—'}</div></td>
-                        <td className="p-3 text-muted/70 max-w-xs"><div className="truncate">{l.interest}</div></td>
-                        <td className="p-3 text-xs text-muted/40">{new Date(l.firstSeen).toLocaleDateString('es-PY')}</td>
-                      </tr>
+                      <Fragment key={l.id}>
+                        <tr className="border-b border-border/10 hover:bg-white/[0.02]">
+                          <td className="p-3"><div className="text-neon-blue">{l.email}</div><div className="text-xs text-muted/50">{l.phone || '—'}</div></td>
+                          <td className="p-3 text-muted/70 max-w-xs"><div className="truncate">{l.interest}</div></td>
+                          <td className="p-3 text-xs text-muted/40">{new Date(l.firstSeen).toLocaleDateString('es-PY')}</td>
+                          <td className="p-3"><button onClick={() => setOpenChat(openChat === l.id ? null : l.id)} className="text-xs text-neon-blue hover:text-neon-purple">{openChat === l.id ? 'Ocultar' : 'Ver conversación'}</button></td>
+                        </tr>
+                        {openChat === l.id && (
+                          <tr><td colSpan={4} className="p-0">
+                            <pre className="m-3 p-3 rounded-lg bg-surface/50 border border-border/20 text-[12px] text-muted/70 whitespace-pre-wrap font-mono max-h-72 overflow-y-auto">{l.transcript || 'Sin transcripción.'}</pre>
+                          </td></tr>
+                        )}
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>
@@ -1153,6 +1193,45 @@ export default function AdminPage() {
             <div className="flex gap-3 pt-2">
               <button onClick={() => setBlog([...blog, { id: `post-${Date.now()}`, slug: '', title: 'Nuevo artículo', excerpt: '', content: '## Título\n\nEscribí acá tu contenido en **Markdown**.', author: 'CEO', coverImage: '', tags: [], published: false, publishedAt: new Date().toISOString(), seoDescription: '' }])} className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-dashed border-border/40 text-muted/60 hover:text-neon-blue hover:border-neon-blue/40 transition-all text-sm"><Plus className="w-4 h-4" /> Nuevo artículo</button>
               <button onClick={saveBlog} disabled={saving} className={btnPrimary}><Save className="w-4 h-4" /> {saving ? 'Guardando...' : 'Guardar blog'}</button>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════ AJUSTES / CREDENCIALES ═══════════ */}
+        {tab === 'ajustes' && (
+          <div className="space-y-5">
+            <div className={`${card} flex items-start gap-3`}>
+              <KeyRound className="w-5 h-5 text-neon-blue mt-0.5 shrink-0" />
+              <div>
+                <h3 className="font-semibold text-sm">Credenciales del sistema</h3>
+                <p className="text-xs text-muted/50 mt-1">Configurá acá las claves de IA, pagos, marketing, email y WhatsApp. Se guardan en el servidor (fuera del repositorio) y nunca se muestran completas. Dejá un campo vacío para no modificarlo. Lo que cargues acá tiene prioridad sobre las variables de entorno.</p>
+              </div>
+            </div>
+            {secrets.map((g) => (
+              <div key={g.group} className={card}>
+                <h3 className="font-semibold text-sm mb-4">{g.group}</h3>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {g.keys.map((k) => (
+                    <div key={k.name}>
+                      <label className={label}>
+                        {k.label}
+                        {k.configured && <span className={`ml-2 text-[10px] ${k.source === 'panel' ? 'text-neon-green' : 'text-neon-blue'}`}>✓ {k.source}</span>}
+                      </label>
+                      <input
+                        type="password"
+                        autoComplete="new-password"
+                        value={secretDraft[k.name] ?? ''}
+                        onChange={(e) => setSecretDraft({ ...secretDraft, [k.name]: e.target.value })}
+                        placeholder={k.configured ? `configurado (${k.hint})` : 'sin configurar'}
+                        className={input}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <div className="sticky bottom-4 flex justify-end">
+              <button onClick={saveSecrets} disabled={saving} className={btnPrimary}><Save className="w-4 h-4" /> {saving ? 'Guardando...' : 'Guardar credenciales'}</button>
             </div>
           </div>
         )}
