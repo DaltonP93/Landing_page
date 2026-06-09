@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Save, Plus, Trash2, ArrowLeft, Eye, Package, Settings2,
   Users as UsersIcon, LogOut, ChevronDown, RefreshCw, Search,
-  Lock,
+  Lock, Tag, Megaphone, CreditCard, Upload, Copy, Power,
+  Image as ImageIcon, Link2,
 } from 'lucide-react';
 import { ICON_NAMES, getIcon } from '@/lib/icons';
 
@@ -22,6 +23,8 @@ interface Product {
   targetAudience: string[];
   pricing: { monthly: number; annual: number; currency: string; popular: boolean };
   badge: string;
+  image: string;
+  gallery: string[];
   demoUrl: string;
   order: number;
 }
@@ -34,6 +37,32 @@ interface SiteData {
   testimonials: { name: string; role: string; company: string; text: string; avatar: string }[];
   faq: { question: string; answer: string }[];
   footer: { tagline: string; socialLinks: Record<string, string> };
+  integrations: Record<string, string>;
+  billing: {
+    enabled: boolean; currency: string; taxPercent: number;
+    paymentMethods: string[]; bankInfo: string; checkoutNote: string; setupFee: number;
+  };
+}
+
+interface Promotion {
+  id: string; title: string; description: string; discountPercent: number;
+  code: string; productIds: string[]; startsAt: string; endsAt: string;
+  active: boolean; color: string;
+}
+
+interface Campaign {
+  id: string; name: string; channel: string; status: string; budget: number;
+  startsAt: string; endsAt: string;
+  utm: { source: string; medium: string; campaign: string; content: string };
+  landingPath: string; notes: string;
+}
+
+interface Subscription {
+  id: string; name: string; email: string; phone: string; company: string;
+  productId: string; productName: string; plan: string; amount: number;
+  promoCode: string; paymentMethod: string;
+  status: 'pending' | 'active' | 'suspended' | 'cancelled';
+  accessEnabled: boolean; createdAt: string; activatedAt: string | null;
 }
 
 interface Demo {
@@ -52,7 +81,7 @@ interface Demo {
   status: 'active' | 'expired' | 'converted';
 }
 
-type Tab = 'productos' | 'sitio' | 'leads';
+type Tab = 'productos' | 'sitio' | 'promociones' | 'campanas' | 'cobros' | 'leads';
 
 /* ─────────────────── Estilos reutilizables ─────────────────── */
 
@@ -133,6 +162,9 @@ export default function AdminPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [site, setSite] = useState<SiteData | null>(null);
   const [demos, setDemos] = useState<Demo[]>([]);
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [subs, setSubs] = useState<Subscription[]>([]);
   const [tab, setTab] = useState<Tab>('productos');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -150,6 +182,15 @@ export default function AdminPage() {
     fetch('/api/demo', { headers: { 'x-api-key': key } })
       .then((r) => (r.ok ? r.json() : []))
       .then(setDemos)
+      .catch(() => {});
+    fetch('/api/promotions').then((r) => r.json()).then(setPromotions).catch(() => {});
+    fetch('/api/campaigns', { headers: { 'x-api-key': key } })
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setCampaigns)
+      .catch(() => {});
+    fetch('/api/billing', { headers: { 'x-api-key': key } })
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setSubs)
       .catch(() => {});
   }, []);
 
@@ -210,6 +251,54 @@ export default function AdminPage() {
     flash(res.ok ? '✓ Sitio guardado' : '✗ Error al guardar');
   };
 
+  const savePromotions = async () => {
+    setSaving(true);
+    const res = await fetch('/api/promotions', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+      body: JSON.stringify(promotions),
+    });
+    setSaving(false);
+    flash(res.ok ? '✓ Promociones guardadas' : '✗ Error al guardar');
+  };
+
+  const saveCampaigns = async () => {
+    setSaving(true);
+    const res = await fetch('/api/campaigns', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+      body: JSON.stringify(campaigns),
+    });
+    setSaving(false);
+    flash(res.ok ? '✓ Campañas guardadas' : '✗ Error al guardar');
+  };
+
+  const patchSub = async (id: string, body: { status?: string; accessEnabled?: boolean }) => {
+    const res = await fetch('/api/billing', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+      body: JSON.stringify({ id, ...body }),
+    });
+    if (res.ok) {
+      const { subscription } = await res.json();
+      setSubs((prev) => prev.map((s) => (s.id === id ? subscription : s)));
+      flash('✓ Suscripción actualizada');
+    } else {
+      flash('✗ Error al actualizar');
+    }
+  };
+
+  /** Sube una imagen y devuelve su URL pública. */
+  const uploadImage = async (file: File): Promise<string | null> => {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch('/api/upload', { method: 'POST', headers: { 'x-api-key': apiKey }, body: fd });
+    if (!res.ok) { flash('✗ Error al subir imagen'); return null; }
+    const { url } = await res.json();
+    flash('✓ Imagen subida');
+    return url;
+  };
+
   /* ── Helpers de productos ── */
   const updateProduct = (id: string, field: string, value: unknown) => {
     setProducts((prev) =>
@@ -232,7 +321,7 @@ export default function AdminPage() {
       features: ['Característica 1', 'Característica 2', 'Característica 3'],
       targetAudience: ['Público objetivo'],
       pricing: { monthly: 500000, annual: 5000000, currency: 'PYG', popular: false },
-      badge: '', demoUrl: '#', order: products.length + 1,
+      badge: '', image: '', gallery: [], demoUrl: '#', order: products.length + 1,
     };
     setProducts([...products, np]);
     setEditing(np.id);
@@ -305,10 +394,13 @@ export default function AdminPage() {
 
       {/* Tabs */}
       <div className="max-w-7xl mx-auto px-4 pt-6">
-        <div className="flex gap-1 p-1 rounded-xl glass border border-border/20 w-fit">
+        <div className="flex flex-wrap gap-1 p-1 rounded-xl glass border border-border/20">
           {([
             ['productos', 'Productos', Package, products.length],
-            ['sitio', 'Contenido del sitio', Settings2, null],
+            ['sitio', 'Contenido', Settings2, null],
+            ['promociones', 'Promociones', Tag, promotions.length],
+            ['campanas', 'Campañas', Megaphone, campaigns.length],
+            ['cobros', 'Cobros', CreditCard, subs.filter((s) => s.status === 'pending').length],
             ['leads', 'Leads / Demos', UsersIcon, activeDemos],
           ] as [Tab, string, React.ComponentType<React.SVGProps<SVGSVGElement>>, number | null][]).map(([t, lbl, Ico, count]) => (
             <button
@@ -382,6 +474,26 @@ export default function AdminPage() {
                       <div><label className={label}>Descripción</label><textarea value={product.description} onChange={(e) => updateProduct(product.id, 'description', e.target.value)} rows={2} className={`${input} resize-none`} /></div>
                       <div><label className={label}>Características (una por línea)</label><textarea value={product.features.join('\n')} onChange={(e) => updateProduct(product.id, 'features', e.target.value.split('\n'))} rows={4} className={`${input} resize-none font-mono text-xs`} /></div>
                       <div><label className={label}>Público objetivo (uno por línea)</label><textarea value={product.targetAudience.join('\n')} onChange={(e) => updateProduct(product.id, 'targetAudience', e.target.value.split('\n'))} rows={2} className={`${input} resize-none font-mono text-xs`} /></div>
+
+                      <div>
+                        <label className={label}>Imagen del producto</label>
+                        <div className="flex items-center gap-3">
+                          <div className="w-20 h-14 rounded-lg overflow-hidden border border-border/30 bg-surface/50 flex items-center justify-center shrink-0">
+                            {product.image
+                              // eslint-disable-next-line @next/next/no-img-element
+                              ? <img src={product.image} alt="" className="w-full h-full object-cover" />
+                              : <ImageIcon className="w-5 h-5 text-muted/40" />}
+                          </div>
+                          <input value={product.image} onChange={(e) => updateProduct(product.id, 'image', e.target.value)} placeholder="https://... o subí un archivo →" className={input} />
+                          <label className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border/30 text-xs text-muted/70 hover:text-neon-blue hover:border-neon-blue/40 cursor-pointer transition-all shrink-0">
+                            <Upload className="w-3.5 h-3.5" /> Subir
+                            <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                              const f = e.target.files?.[0];
+                              if (f) { const url = await uploadImage(f); if (url) updateProduct(product.id, 'image', url); }
+                            }} />
+                          </label>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -508,9 +620,180 @@ export default function AdminPage() {
               </div>
             </div>
 
+            {/* Integraciones de marketing */}
+            <div className={card}>
+              <h3 className="font-semibold text-sm mb-1">Integraciones (Google y Facebook)</h3>
+              <p className="text-xs text-muted/50 mb-4">Pegá los IDs y se inyectan automáticamente en el sitio para analítica, campañas y verificación de Google.</p>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {([
+                  ['googleAnalyticsId', 'Google Analytics 4 (G-XXXX)'],
+                  ['googleTagManagerId', 'Google Tag Manager (GTM-XXXX)'],
+                  ['googleAdsConversionId', 'Google Ads conversión (AW-XXXX)'],
+                  ['googleSiteVerification', 'Google Search Console (verificación)'],
+                  ['facebookPixelId', 'Facebook Pixel ID'],
+                  ['facebookAppId', 'Facebook App ID'],
+                  ['facebookPageUrl', 'URL de página de Facebook'],
+                ] as [string, string][]).map(([k, lbl]) => (
+                  <div key={k}>
+                    <label className={label}>{lbl}</label>
+                    <input value={site.integrations?.[k] || ''} onChange={(e) => setSiteField(['integrations', k], e.target.value)} className={input} placeholder="(vacío = desactivado)" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Configuración de cobros */}
+            <div className={card}>
+              <h3 className="font-semibold text-sm mb-1">Cobros / Facturación</h3>
+              <p className="text-xs text-muted/50 mb-4">Datos que se muestran en el checkout al contratar un sistema.</p>
+              <div className="grid sm:grid-cols-3 gap-4 mb-4">
+                <div><label className={label}>IVA (%)</label><input type="number" value={site.billing.taxPercent} onChange={(e) => setSiteField(['billing', 'taxPercent'], Number(e.target.value))} className={input} /></div>
+                <div><label className={label}>Costo de instalación (Gs.)</label><input type="number" value={site.billing.setupFee} onChange={(e) => setSiteField(['billing', 'setupFee'], Number(e.target.value))} className={input} /></div>
+                <div className="flex items-end"><label className="flex items-center gap-2 cursor-pointer text-sm text-muted/80"><input type="checkbox" checked={site.billing.enabled} onChange={(e) => setSiteField(['billing', 'enabled'], e.target.checked)} className="w-4 h-4 rounded accent-neon-purple" /> Cobros habilitados</label></div>
+              </div>
+              <div className="mb-4"><label className={label}>Medios de pago (separados por coma)</label><input value={site.billing.paymentMethods.join(', ')} onChange={(e) => setSiteField(['billing', 'paymentMethods'], e.target.value.split(',').map((s) => s.trim()).filter(Boolean))} className={input} placeholder="transferencia, tarjeta, bancard" /></div>
+              <div className="mb-4"><label className={label}>Datos bancarios / instrucciones de pago</label><textarea value={site.billing.bankInfo} onChange={(e) => setSiteField(['billing', 'bankInfo'], e.target.value)} rows={2} className={`${input} resize-none`} /></div>
+              <div><label className={label}>Nota del checkout</label><textarea value={site.billing.checkoutNote} onChange={(e) => setSiteField(['billing', 'checkoutNote'], e.target.value)} rows={2} className={`${input} resize-none`} /></div>
+            </div>
+
             <div className="sticky bottom-4 flex justify-end">
               <button onClick={saveSite} disabled={saving} className={btnPrimary}><Save className="w-4 h-4" /> {saving ? 'Guardando...' : 'Guardar todo el sitio'}</button>
             </div>
+          </div>
+        )}
+
+        {/* ═══════════ PROMOCIONES ═══════════ */}
+        {tab === 'promociones' && (
+          <div className="space-y-3">
+            <p className="text-xs text-muted/50">Ofertas con descuento por tiempo limitado. Se muestran como banner con cuenta regresiva y aplican el precio rebajado en la sección de precios y el checkout.</p>
+            {promotions.map((p, i) => (
+              <div key={p.id} className={`${card} space-y-3`}>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div><label className={label}>Título</label><input value={p.title} onChange={(e) => { const a = [...promotions]; a[i] = { ...a[i], title: e.target.value }; setPromotions(a); }} className={input} /></div>
+                  <div><label className={label}>Código</label><input value={p.code} onChange={(e) => { const a = [...promotions]; a[i] = { ...a[i], code: e.target.value }; setPromotions(a); }} className={input} /></div>
+                  <div><label className={label}>Descuento (%)</label><input type="number" value={p.discountPercent} onChange={(e) => { const a = [...promotions]; a[i] = { ...a[i], discountPercent: Number(e.target.value) }; setPromotions(a); }} className={input} /></div>
+                  <div><label className={label}>Color</label><div className="flex gap-2"><input type="color" value={p.color} onChange={(e) => { const a = [...promotions]; a[i] = { ...a[i], color: e.target.value }; setPromotions(a); }} className="w-10 h-9 rounded cursor-pointer bg-transparent border border-border/30" /><input value={p.color} onChange={(e) => { const a = [...promotions]; a[i] = { ...a[i], color: e.target.value }; setPromotions(a); }} className={input} /></div></div>
+                  <div className="sm:col-span-2"><label className={label}>Descripción</label><input value={p.description} onChange={(e) => { const a = [...promotions]; a[i] = { ...a[i], description: e.target.value }; setPromotions(a); }} className={input} /></div>
+                  <div><label className={label}>Inicio</label><input type="datetime-local" value={p.startsAt.slice(0, 16)} onChange={(e) => { const a = [...promotions]; a[i] = { ...a[i], startsAt: new Date(e.target.value).toISOString() }; setPromotions(a); }} className={input} /></div>
+                  <div><label className={label}>Fin</label><input type="datetime-local" value={p.endsAt.slice(0, 16)} onChange={(e) => { const a = [...promotions]; a[i] = { ...a[i], endsAt: new Date(e.target.value).toISOString() }; setPromotions(a); }} className={input} /></div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap gap-2">
+                    <label className="flex items-center gap-1.5 text-xs text-muted/70 cursor-pointer"><input type="checkbox" checked={p.active} onChange={(e) => { const a = [...promotions]; a[i] = { ...a[i], active: e.target.checked }; setPromotions(a); }} className="w-4 h-4 rounded accent-neon-purple" /> Activa</label>
+                    <span className="text-[11px] text-muted/40">Productos: {p.productIds.length === 0 ? 'todos' : p.productIds.join(', ')}</span>
+                  </div>
+                  <button onClick={() => setPromotions(promotions.filter((_, j) => j !== i))} className="p-2 text-muted/40 hover:text-neon-pink"><Trash2 className="w-4 h-4" /></button>
+                </div>
+                <div>
+                  <label className={label}>Aplica a productos (vacío = todos)</label>
+                  <div className="flex flex-wrap gap-2">
+                    {products.map((prod) => {
+                      const on = p.productIds.includes(prod.id);
+                      return (
+                        <button key={prod.id} type="button" onClick={() => { const a = [...promotions]; const set = on ? p.productIds.filter((x) => x !== prod.id) : [...p.productIds, prod.id]; a[i] = { ...a[i], productIds: set }; setPromotions(a); }}
+                          className={`text-[11px] px-2.5 py-1 rounded-full border transition-all ${on ? 'border-neon-purple/40 bg-neon-purple/15 text-white' : 'border-border/30 text-muted/50 hover:text-white'}`}>{prod.shortName}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            ))}
+            <div className="flex gap-3 pt-2">
+              <button onClick={() => setPromotions([...promotions, { id: `promo-${Date.now()}`, title: 'Nueva promo', description: '', discountPercent: 10, code: '', productIds: [], startsAt: new Date().toISOString(), endsAt: new Date(Date.now() + 7 * 86400000).toISOString(), active: true, color: '#ff2d92' }])} className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-dashed border-border/40 text-muted/60 hover:text-neon-blue hover:border-neon-blue/40 transition-all text-sm"><Plus className="w-4 h-4" /> Agregar promoción</button>
+              <button onClick={savePromotions} disabled={saving} className={btnPrimary}><Save className="w-4 h-4" /> {saving ? 'Guardando...' : 'Guardar promociones'}</button>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════ CAMPAÑAS ═══════════ */}
+        {tab === 'campanas' && (
+          <div className="space-y-3">
+            <p className="text-xs text-muted/50">Gestioná campañas de Google, Facebook, Instagram o email. El constructor de UTM genera el link rastreable para usar en tus anuncios.</p>
+            {campaigns.map((c, i) => {
+              const base = (site?.company.name ? '' : '') + (typeof window !== 'undefined' ? window.location.origin : '');
+              const utmUrl = `${base}${c.landingPath || '/'}?utm_source=${encodeURIComponent(c.utm.source)}&utm_medium=${encodeURIComponent(c.utm.medium)}&utm_campaign=${encodeURIComponent(c.utm.campaign)}${c.utm.content ? `&utm_content=${encodeURIComponent(c.utm.content)}` : ''}`;
+              return (
+                <div key={c.id} className={`${card} space-y-3`}>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div className="lg:col-span-2"><label className={label}>Nombre</label><input value={c.name} onChange={(e) => { const a = [...campaigns]; a[i] = { ...a[i], name: e.target.value }; setCampaigns(a); }} className={input} /></div>
+                    <div><label className={label}>Canal</label><select value={c.channel} onChange={(e) => { const a = [...campaigns]; a[i] = { ...a[i], channel: e.target.value }; setCampaigns(a); }} className={`${input} [&>option]:bg-surface`}><option value="google">Google</option><option value="facebook">Facebook</option><option value="instagram">Instagram</option><option value="email">Email</option><option value="otro">Otro</option></select></div>
+                    <div><label className={label}>Estado</label><select value={c.status} onChange={(e) => { const a = [...campaigns]; a[i] = { ...a[i], status: e.target.value }; setCampaigns(a); }} className={`${input} [&>option]:bg-surface`}><option value="draft">Borrador</option><option value="active">Activa</option><option value="paused">Pausada</option><option value="ended">Finalizada</option></select></div>
+                    <div><label className={label}>Presupuesto (Gs.)</label><input type="number" value={c.budget} onChange={(e) => { const a = [...campaigns]; a[i] = { ...a[i], budget: Number(e.target.value) }; setCampaigns(a); }} className={input} /></div>
+                    <div><label className={label}>Inicio</label><input type="date" value={c.startsAt} onChange={(e) => { const a = [...campaigns]; a[i] = { ...a[i], startsAt: e.target.value }; setCampaigns(a); }} className={input} /></div>
+                    <div><label className={label}>Fin</label><input type="date" value={c.endsAt} onChange={(e) => { const a = [...campaigns]; a[i] = { ...a[i], endsAt: e.target.value }; setCampaigns(a); }} className={input} /></div>
+                  </div>
+                  <div className="grid sm:grid-cols-4 gap-3">
+                    <div><label className={label}>UTM source</label><input value={c.utm.source} onChange={(e) => { const a = [...campaigns]; a[i] = { ...a[i], utm: { ...a[i].utm, source: e.target.value } }; setCampaigns(a); }} className={input} /></div>
+                    <div><label className={label}>UTM medium</label><input value={c.utm.medium} onChange={(e) => { const a = [...campaigns]; a[i] = { ...a[i], utm: { ...a[i].utm, medium: e.target.value } }; setCampaigns(a); }} className={input} /></div>
+                    <div><label className={label}>UTM campaign</label><input value={c.utm.campaign} onChange={(e) => { const a = [...campaigns]; a[i] = { ...a[i], utm: { ...a[i].utm, campaign: e.target.value } }; setCampaigns(a); }} className={input} /></div>
+                    <div><label className={label}>UTM content</label><input value={c.utm.content} onChange={(e) => { const a = [...campaigns]; a[i] = { ...a[i], utm: { ...a[i].utm, content: e.target.value } }; setCampaigns(a); }} className={input} /></div>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-surface/40 border border-border/20">
+                    <Link2 className="w-3.5 h-3.5 text-neon-blue shrink-0" />
+                    <code className="text-[11px] text-muted/70 truncate flex-1">{utmUrl}</code>
+                    <button onClick={() => navigator.clipboard?.writeText(utmUrl).then(() => flash('✓ Link copiado'))} className="p-1.5 rounded text-muted/50 hover:text-neon-blue shrink-0"><Copy className="w-3.5 h-3.5" /></button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <input value={c.notes} onChange={(e) => { const a = [...campaigns]; a[i] = { ...a[i], notes: e.target.value }; setCampaigns(a); }} placeholder="Notas (keywords, segmentación...)" className={`${input} flex-1 mr-2`} />
+                    <button onClick={() => setCampaigns(campaigns.filter((_, j) => j !== i))} className="p-2 text-muted/40 hover:text-neon-pink"><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                </div>
+              );
+            })}
+            <div className="flex gap-3 pt-2">
+              <button onClick={() => setCampaigns([...campaigns, { id: `camp-${Date.now()}`, name: 'Nueva campaña', channel: 'google', status: 'draft', budget: 0, startsAt: '', endsAt: '', utm: { source: 'google', medium: 'cpc', campaign: '', content: '' }, landingPath: '/', notes: '' }])} className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-dashed border-border/40 text-muted/60 hover:text-neon-blue hover:border-neon-blue/40 transition-all text-sm"><Plus className="w-4 h-4" /> Agregar campaña</button>
+              <button onClick={saveCampaigns} disabled={saving} className={btnPrimary}><Save className="w-4 h-4" /> {saving ? 'Guardando...' : 'Guardar campañas'}</button>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════ COBROS ═══════════ */}
+        {tab === 'cobros' && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                ['Pendientes', subs.filter((s) => s.status === 'pending').length, 'text-warning'],
+                ['Activas', subs.filter((s) => s.status === 'active').length, 'text-neon-green'],
+                ['Con acceso', subs.filter((s) => s.accessEnabled).length, 'text-neon-blue'],
+                ['Ingresos activos', subs.filter((s) => s.status === 'active').reduce((t, s) => t + s.amount, 0), 'text-white'],
+              ].map(([lbl, val, cls], i) => (
+                <div key={lbl as string} className={card}>
+                  <div className={`text-2xl font-bold ${cls}`}>{i === 3 ? `Gs. ${(val as number).toLocaleString('es-PY')}` : (val as number)}</div>
+                  <div className="text-xs text-muted/50 mt-1">{lbl as string}</div>
+                </div>
+              ))}
+            </div>
+            {subs.length === 0 ? (
+              <div className={`${card} text-center py-12 text-muted/50 text-sm`}>Todavía no hay contrataciones.</div>
+            ) : (
+              <div className="rounded-xl glass border border-border/20 overflow-hidden overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead><tr className="border-b border-border/20 text-left text-[11px] uppercase tracking-wide text-muted/50">
+                    <th className="p-3 font-medium">Cliente</th><th className="p-3 font-medium">Producto</th><th className="p-3 font-medium">Monto</th><th className="p-3 font-medium">Estado</th><th className="p-3 font-medium">Acceso</th><th className="p-3 font-medium">Acciones</th>
+                  </tr></thead>
+                  <tbody>
+                    {subs.slice().reverse().map((s) => (
+                      <tr key={s.id} className="border-b border-border/10 hover:bg-white/[0.02]">
+                        <td className="p-3"><div className="font-medium text-white">{s.company}</div><div className="text-xs text-muted/50">{s.name} · {s.email}</div></td>
+                        <td className="p-3 text-muted/70">{s.productName}<div className="text-xs text-muted/40">{s.plan === 'annual' ? 'Anual' : 'Mensual'}{s.promoCode && ` · ${s.promoCode}`}</div></td>
+                        <td className="p-3 text-muted/80">Gs. {s.amount.toLocaleString('es-PY')}</td>
+                        <td className="p-3">
+                          <select value={s.status} onChange={(e) => patchSub(s.id, { status: e.target.value })} className="bg-surface/50 border border-border/30 rounded px-2 py-1 text-xs text-white focus:outline-none [&>option]:bg-surface">
+                            <option value="pending">Pendiente</option><option value="active">Activa</option><option value="suspended">Suspendida</option><option value="cancelled">Cancelada</option>
+                          </select>
+                        </td>
+                        <td className="p-3">
+                          <button onClick={() => patchSub(s.id, { accessEnabled: !s.accessEnabled })} className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full transition-all ${s.accessEnabled ? 'bg-neon-green/15 text-neon-green' : 'bg-white/5 text-muted/50 hover:text-white'}`}>
+                            <Power className="w-3 h-3" /> {s.accessEnabled ? 'Habilitado' : 'Deshabilitado'}
+                          </button>
+                        </td>
+                        <td className="p-3 text-xs text-muted/40">{new Date(s.createdAt).toLocaleDateString('es-PY')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 

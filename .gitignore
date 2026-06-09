@@ -33,8 +33,13 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
-# runtime data — leads/demos con datos de clientes (no commitear)
+# runtime data — datos de clientes (no commitear)
 /data/demos.json
+/data/subscriptions.json
+
+# imágenes subidas desde el panel (runtime)
+/public/uploads/*
+!/public/uploads/.gitkeep
 
 # vercel
 .vercel

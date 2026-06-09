@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import siteData from "@/data/site.json";
+import Analytics from "@/components/Analytics";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,6 +35,9 @@ export const metadata: Metadata = {
     type: "website",
     locale: "es_PY",
   },
+  ...(siteData.integrations?.googleSiteVerification
+    ? { verification: { google: siteData.integrations.googleSiteVerification } }
+    : {}),
 };
 
 export default function RootLayout({
@@ -46,7 +50,10 @@ export default function RootLayout({
       lang="es"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased scroll-smooth`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <Analytics />
+        {children}
+      </body>
     </html>
   );
 }

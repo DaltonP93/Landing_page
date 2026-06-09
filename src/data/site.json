@@ -96,5 +96,23 @@
       "linkedin": "#",
       "facebook": "#"
     }
+  },
+  "integrations": {
+    "googleAnalyticsId": "",
+    "googleTagManagerId": "",
+    "googleAdsConversionId": "",
+    "googleSiteVerification": "",
+    "facebookPixelId": "",
+    "facebookAppId": "",
+    "facebookPageUrl": ""
+  },
+  "billing": {
+    "enabled": true,
+    "currency": "PYG",
+    "taxPercent": 10,
+    "paymentMethods": ["transferencia", "tarjeta", "bancard"],
+    "bankInfo": "Configurá tus datos bancarios desde el panel de administración.",
+    "checkoutNote": "Al confirmar la contratación activamos tu cuenta en un máximo de 24 horas hábiles.",
+    "setupFee": 0
   }
 }

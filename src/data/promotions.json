@@ -1,0 +1,14 @@
+[
+  {
+    "id": "promo-lanzamiento",
+    "title": "Oferta de Lanzamiento",
+    "description": "20% OFF en tu primer año contratando cualquier sistema",
+    "discountPercent": 20,
+    "code": "LANZAMIENTO20",
+    "productIds": [],
+    "startsAt": "2026-06-01T00:00:00.000Z",
+    "endsAt": "2026-12-31T23:59:59.000Z",
+    "active": true,
+    "color": "#ff2d92"
+  }
+]

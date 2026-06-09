@@ -2,6 +2,7 @@
 
 import { ArrowDown, Zap } from 'lucide-react';
 import siteData from '@/data/site.json';
+import PromoBanner from './PromoBanner';
 
 export default function Hero() {
   return (
@@ -21,6 +22,7 @@ export default function Hero() {
       </div>
 
       <div className="relative z-10 max-w-5xl mx-auto px-6 text-center pt-24 pb-32">
+        <PromoBanner />
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass border border-neon-blue/20 mb-10 shadow-[0_0_15px_rgba(0,212,255,0.1)]">
           <span className="w-2 h-2 rounded-full bg-neon-green shadow-[0_0_8px_rgba(0,255,136,0.6)] animate-pulse" />

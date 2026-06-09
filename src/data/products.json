@@ -23,6 +23,8 @@
       "popular": false
     },
     "badge": "",
+    "image": "",
+    "gallery": [],
     "demoUrl": "#",
     "order": 1
   },
@@ -50,6 +52,8 @@
       "popular": true
     },
     "badge": "Más Popular",
+    "image": "",
+    "gallery": [],
     "demoUrl": "#",
     "order": 2
   },
@@ -77,6 +81,8 @@
       "popular": false
     },
     "badge": "",
+    "image": "",
+    "gallery": [],
     "demoUrl": "#",
     "order": 3
   },
@@ -104,6 +110,8 @@
       "popular": false
     },
     "badge": "Nuevo",
+    "image": "",
+    "gallery": [],
     "demoUrl": "#",
     "order": 4
   },
@@ -131,6 +139,8 @@
       "popular": false
     },
     "badge": "",
+    "image": "",
+    "gallery": [],
     "demoUrl": "#",
     "order": 5
   },
@@ -158,6 +168,8 @@
       "popular": false
     },
     "badge": "Premium",
+    "image": "",
+    "gallery": [],
     "demoUrl": "#",
     "order": 6
   }

@@ -1,0 +1,19 @@
+[
+  {
+    "id": "camp-google-rrhh",
+    "name": "Google Search — Software RRHH",
+    "channel": "google",
+    "status": "active",
+    "budget": 1500000,
+    "startsAt": "2026-06-01",
+    "endsAt": "2026-07-01",
+    "utm": {
+      "source": "google",
+      "medium": "cpc",
+      "campaign": "rrhh_search",
+      "content": "anuncio_1"
+    },
+    "landingPath": "/",
+    "notes": "Keywords: software rrhh paraguay, nómina IPS, control de asistencia"
+  }
+]

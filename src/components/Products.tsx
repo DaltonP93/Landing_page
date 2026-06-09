@@ -24,8 +24,16 @@ function ProductCard({ product, index }: { product: typeof products[0]; index: n
         onClick={() => setExpanded(!expanded)}
       >
         {product.badge && (
-          <div className="absolute -top-2.5 right-4 px-3 py-0.5 rounded-full text-[10px] font-semibold tracking-wide uppercase bg-gradient-to-r from-neon-purple to-neon-blue text-white shadow-[0_0_12px_rgba(124,58,237,0.4)]">
+          <div className="absolute -top-2.5 right-4 z-10 px-3 py-0.5 rounded-full text-[10px] font-semibold tracking-wide uppercase bg-gradient-to-r from-neon-purple to-neon-blue text-white shadow-[0_0_12px_rgba(124,58,237,0.4)]">
             {product.badge}
+          </div>
+        )}
+
+        {product.image && (
+          <div className="h-36 w-full overflow-hidden rounded-t-xl border-b border-border/20 relative">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={product.image} alt={product.name} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" />
+            <div className="absolute inset-0 bg-gradient-to-t from-surface/80 to-transparent" />
           </div>
         )}
 

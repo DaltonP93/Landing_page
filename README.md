@@ -9,13 +9,20 @@ completo** para editar todo el contenido sin tocar código.
 
 - **Diseño futurista sci-fi** — glassmorphism, orbes 3D, partículas animadas, glow neón, gradientes animados.
 - **CMS por JSON + API REST** — todo el contenido vive en `src/data/*.json` y se edita desde `/admin`.
-- **Panel admin completo** (`/admin`) — edita productos, datos de empresa, hero, estadísticas,
-  ventajas, testimonios, FAQ, footer/redes y **visualiza los leads/demos solicitados**.
-- **Demo gratuita 15 días** — genera usuario/contraseña, los envía por email (Nodemailer),
-  notifica al equipo por WhatsApp y provisiona la cuenta en el sistema elegido vía API.
+- **Panel admin integral** (`/admin`) con 6 módulos:
+  - **Productos** — alta/baja/edición, **imágenes** (URL o subida), ícono, color, badge, precios.
+  - **Contenido** — empresa, hero, stats, ventajas, testimonios, FAQ, footer/redes, **integraciones** y **cobros**.
+  - **Promociones** — ofertas con descuento **por tiempo limitado** (cuenta regresiva en la landing).
+  - **Campañas** — Google/Facebook/Instagram/Email con **constructor de UTM** rastreable.
+  - **Cobros** — suscripciones, estados y **habilitar/deshabilitar acceso** a cada sistema.
+  - **Leads / Demos** — todas las solicitudes de demo con credenciales generadas.
+- **Cobro directo** — checkout en `/contratar/[producto]` con cálculo de promo, IVA y total.
+- **Demo gratuita 15 días** — genera usuario/contraseña, email (Nodemailer), aviso por WhatsApp y provisión vía API.
+- **Integraciones de marketing** — Google Analytics, GTM, Google Ads, Search Console y Facebook Pixel,
+  configurables desde el panel e inyectadas automáticamente.
 - **Chatbot de ventas** — responde sobre productos, precios y demos leyendo los datos reales.
 - **Nombre de marca centralizado** — se cambia en un solo lugar y se propaga a SEO, emails y footer.
-- **Escalable** — agregar un producto nuevo es agregar una entrada en el panel.
+- **Escalable** — agregar un producto, promo o campaña es una entrada más en el panel.
 
 ## 🧱 Stack
 
