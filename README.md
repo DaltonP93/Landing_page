@@ -17,6 +17,9 @@ completo** para editar todo el contenido sin tocar código.
   - **Cobros** — suscripciones, estados y **habilitar/deshabilitar acceso** a cada sistema.
   - **Leads / Demos** — todas las solicitudes de demo con credenciales generadas.
 - **Cobro directo** — checkout en `/contratar/[producto]` con cálculo de promo, IVA y total.
+- **Pasarela de pago** — Bancard, Stripe o transferencia (configurable en el panel), con **webhook** que activa la cuenta y habilita el acceso al confirmarse el pago.
+- **Páginas de producto** (`/producto/[id]`) con galería de imágenes, características y datos completos.
+- **SEO** — `sitemap.xml`, `robots.txt` y datos estructurados (schema.org/JSON-LD) para aparecer en Google.
 - **Demo gratuita 15 días** — genera usuario/contraseña, email (Nodemailer), aviso por WhatsApp y provisión vía API.
 - **Integraciones de marketing** — Google Analytics, GTM, Google Ads, Search Console y Facebook Pixel,
   configurables desde el panel e inyectadas automáticamente.

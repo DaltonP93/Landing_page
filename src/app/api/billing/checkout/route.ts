@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { readData, writeData } from '@/lib/store';
 import { notifyTeam, COMPANY_NAME } from '@/lib/provision';
 import { getPromoForProduct, applyDiscount, type Promotion } from '@/lib/promotions';
+import { createPayment } from '@/lib/gateways';
 import products from '@/data/products.json';
 import site from '@/data/site.json';
 
@@ -22,6 +23,9 @@ export interface Subscription {
   paymentMethod: string;
   status: 'pending' | 'active' | 'suspended' | 'cancelled';
   accessEnabled: boolean;
+  gateway: string;
+  paymentRef: string;
+  paymentStatus: 'pending' | 'paid';
   createdAt: string;
   activatedAt: string | null;
 }
@@ -57,9 +61,24 @@ export async function POST(request: NextRequest) {
     paymentMethod: paymentMethod || site.billing.paymentMethods[0] || 'transferencia',
     status: 'pending',
     accessEnabled: false,
+    gateway: '',
+    paymentRef: '',
+    paymentStatus: 'pending',
     createdAt: new Date().toISOString(),
     activatedAt: null,
   };
+
+  // Inicia el cobro según la pasarela configurada (manual / stripe / bancard)
+  const payment = await createPayment({
+    id: sub.id,
+    amount: sub.amount,
+    currency: site.billing.currency || 'PYG',
+    description: `${product.name} (${plan === 'annual' ? 'anual' : 'mensual'})`,
+    email,
+    name,
+  });
+  sub.gateway = payment.method;
+  sub.paymentRef = payment.reference;
 
   const subs = readData<Subscription[]>(SUBS_PATH, []);
   subs.push(sub);
@@ -75,6 +94,9 @@ export async function POST(request: NextRequest) {
     amount: sub.amount,
     promoApplied: promo ? { code: promo.code, percent: promo.discountPercent } : null,
     paymentMethod: sub.paymentMethod,
+    gateway: payment.method,
+    redirectUrl: payment.redirectUrl || null,
+    instructions: payment.instructions || site.billing.bankInfo,
     bankInfo: site.billing.bankInfo,
     note: site.billing.checkoutNote,
     company: COMPANY_NAME,

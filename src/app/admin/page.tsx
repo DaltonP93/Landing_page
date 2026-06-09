@@ -39,7 +39,7 @@ interface SiteData {
   footer: { tagline: string; socialLinks: Record<string, string> };
   integrations: Record<string, string>;
   billing: {
-    enabled: boolean; currency: string; taxPercent: number;
+    enabled: boolean; currency: string; taxPercent: number; gateway: string;
     paymentMethods: string[]; bankInfo: string; checkoutNote: string; setupFee: number;
   };
 }
@@ -494,6 +494,24 @@ export default function AdminPage() {
                           </label>
                         </div>
                       </div>
+
+                      <div>
+                        <label className={label}>Galería de imágenes</label>
+                        <div className="flex flex-wrap gap-2">
+                          {product.gallery.map((g, gi) => (
+                            <div key={gi} className="relative w-20 h-14 rounded-lg overflow-hidden border border-border/30 group/g">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={g} alt="" className="w-full h-full object-cover" />
+                              <button onClick={() => updateProduct(product.id, 'gallery', product.gallery.filter((_, j) => j !== gi))} className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover/g:opacity-100 transition-opacity"><Trash2 className="w-3 h-3" /></button>
+                            </div>
+                          ))}
+                          <label className="w-20 h-14 rounded-lg border border-dashed border-border/40 flex items-center justify-center cursor-pointer text-muted/40 hover:text-neon-blue hover:border-neon-blue/40 transition-all">
+                            <Plus className="w-5 h-5" />
+                            <input type="file" accept="image/*" className="hidden" onChange={async (e) => { const f = e.target.files?.[0]; if (f) { const url = await uploadImage(f); if (url) updateProduct(product.id, 'gallery', [...product.gallery, url]); } }} />
+                          </label>
+                        </div>
+                        <input placeholder="...o pegá una URL y presioná Enter" onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); const t = e.target as HTMLInputElement; const v = t.value.trim(); if (v) { updateProduct(product.id, 'gallery', [...product.gallery, v]); t.value = ''; } } }} className={`${input} mt-2`} />
+                      </div>
                     </div>
                   )}
                 </div>
@@ -646,6 +664,15 @@ export default function AdminPage() {
             <div className={card}>
               <h3 className="font-semibold text-sm mb-1">Cobros / Facturación</h3>
               <p className="text-xs text-muted/50 mb-4">Datos que se muestran en el checkout al contratar un sistema.</p>
+              <div className="mb-4">
+                <label className={label}>Pasarela de pago</label>
+                <select value={site.billing.gateway || 'manual'} onChange={(e) => setSiteField(['billing', 'gateway'], e.target.value)} className={`${input} [&>option]:bg-surface`}>
+                  <option value="manual">Transferencia / Manual</option>
+                  <option value="bancard">Bancard (Paraguay)</option>
+                  <option value="stripe">Stripe (tarjetas internacionales)</option>
+                </select>
+                <p className="text-[11px] text-muted/40 mt-1">Stripe y Bancard requieren configurar sus claves en variables de entorno del servidor.</p>
+              </div>
               <div className="grid sm:grid-cols-3 gap-4 mb-4">
                 <div><label className={label}>IVA (%)</label><input type="number" value={site.billing.taxPercent} onChange={(e) => setSiteField(['billing', 'taxPercent'], Number(e.target.value))} className={input} /></div>
                 <div><label className={label}>Costo de instalación (Gs.)</label><input type="number" value={site.billing.setupFee} onChange={(e) => setSiteField(['billing', 'setupFee'], Number(e.target.value))} className={input} /></div>

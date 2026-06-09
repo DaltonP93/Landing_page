@@ -61,13 +61,22 @@ function ProductCard({ product, index }: { product: typeof products[0]; index: n
                 </div>
               ))}
             </div>
-            <a
-              href="#demo"
-              onClick={(e) => e.stopPropagation()}
-              className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-neon-blue hover:text-neon-purple transition-colors"
-            >
-              Probar 15 días gratis <ArrowRight className="w-3 h-3" />
-            </a>
+            <div className="mt-4 flex items-center gap-4">
+              <a
+                href={`/producto/${product.id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-neon-blue hover:text-neon-purple transition-colors"
+              >
+                Ver detalle <ArrowRight className="w-3 h-3" />
+              </a>
+              <a
+                href="#demo"
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-muted hover:text-neon-blue transition-colors"
+              >
+                Probar gratis
+              </a>
+            </div>
           </div>
         </div>
       </div>

@@ -21,7 +21,7 @@ function CheckoutInner() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', paymentMethod: site.billing.paymentMethods[0] });
   const [step, setStep] = useState<Step>('form');
   const [error, setError] = useState('');
-  const [result, setResult] = useState<{ amount: number; bankInfo: string; note: string; promoApplied: { code: string; percent: number } | null } | null>(null);
+  const [result, setResult] = useState<{ amount: number; bankInfo: string; note: string; instructions?: string; gateway?: string; promoApplied: { code: string; percent: number } | null } | null>(null);
 
   if (!product) {
     return (
@@ -56,6 +56,8 @@ function CheckoutInner() {
         throw new Error(d.error || 'No se pudo procesar la contratación');
       }
       const data = await res.json();
+      // Si la pasarela requiere redirección (Stripe/Bancard), enviamos al cliente
+      if (data.redirectUrl) { window.location.href = data.redirectUrl; return; }
       setResult(data);
       setStep('success');
     } catch (err) {
@@ -82,7 +84,7 @@ function CheckoutInner() {
               <Row k="Producto" v={`${product.name} (${plan === 'annual' ? 'Anual' : 'Mensual'})`} />
               <Row k="Total a abonar" v={formatPYG(result.amount + Math.round((result.amount * (site.billing.taxPercent || 0)) / 100))} highlight />
               <Row k="Medio de pago" v={form.paymentMethod} />
-              <div className="pt-2 border-t border-border/20 text-xs text-muted/60">{result.bankInfo}</div>
+              <div className="pt-2 border-t border-border/20 text-xs text-muted/60 whitespace-pre-line">{result.instructions || result.bankInfo}</div>
             </div>
             <a href="/" className="inline-block mt-6 text-xs text-neon-purple hover:text-neon-blue transition-colors">Volver a la landing</a>
           </div>
