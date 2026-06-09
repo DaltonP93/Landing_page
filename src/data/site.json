@@ -116,5 +116,10 @@
     "bankInfo": "Configurá tus datos bancarios desde el panel de administración.",
     "checkoutNote": "Al confirmar la contratación activamos tu cuenta en un máximo de 24 horas hábiles.",
     "setupFee": 0
+  },
+  "ai": {
+    "provider": "anthropic",
+    "model": "",
+    "baseUrl": ""
   }
 }

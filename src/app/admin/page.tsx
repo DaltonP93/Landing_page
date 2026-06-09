@@ -43,6 +43,7 @@ interface SiteData {
     enabled: boolean; currency: string; taxPercent: number; gateway: string;
     paymentMethods: string[]; bankInfo: string; checkoutNote: string; setupFee: number;
   };
+  ai: { provider: string; model: string; baseUrl: string };
 }
 
 interface Promotion {
@@ -316,6 +317,13 @@ export default function AdminPage() {
     flash('✓ Audiencia exportada');
   };
 
+  const syncAudience = async (platform: 'meta' | 'google') => {
+    flash('Sincronizando...');
+    const res = await fetch(`/api/marketing/sync?platform=${platform}`, { method: 'POST', headers: { 'x-api-key': apiKey } });
+    const data = await res.json().catch(() => ({}));
+    flash(data.ok ? `✓ ${data.received} contactos enviados a ${platform}` : `✗ ${data.error || 'Error'}`);
+  };
+
   const patchSub = async (id: string, body: { status?: string; accessEnabled?: boolean }) => {
     const res = await fetch('/api/billing', {
       method: 'PATCH',
@@ -475,6 +483,13 @@ export default function AdminPage() {
           const maxLeads = Math.max(1, ...byProductLeads.map((x) => x.value));
           const maxRev = Math.max(1, ...byProductRev.map((x) => x.value));
           const withPromo = subs.filter((s) => s.promoCode).length;
+          const funnel: [string, number, string][] = [
+            ['Leads captados', totalLeads, 'from-neon-blue to-neon-blue/40'],
+            ['Demos activadas', demos.length, 'from-neon-purple to-neon-purple/40'],
+            ['Contrataciones', subs.length, 'from-neon-pink to-neon-pink/40'],
+            ['Clientes activos', activeSubs.length, 'from-neon-green to-neon-green/40'],
+          ];
+          const funnelMax = Math.max(1, totalLeads);
           const kpis: [string, string, string][] = [
             ['Leads totales', String(totalLeads), 'text-neon-blue'],
             ['Demos activas', String(demos.filter((d) => d.status === 'active').length), 'text-neon-green'],
@@ -525,6 +540,28 @@ export default function AdminPage() {
                 <div className={card}><div className="text-lg font-bold text-neon-blue">{chatLeads.length}</div><div className="text-[11px] text-muted/50 mt-1">Leads del chat IA</div></div>
                 <div className={card}><div className="text-lg font-bold text-neon-pink">{withPromo}</div><div className="text-[11px] text-muted/50 mt-1">Ventas con promoción</div></div>
                 <div className={card}><div className="text-lg font-bold text-neon-purple">{campaigns.filter((c) => c.status === 'active').length}</div><div className="text-[11px] text-muted/50 mt-1">Campañas activas</div></div>
+              </div>
+
+              <div className={card}>
+                <h3 className="font-semibold text-sm mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-neon-green" /> Embudo de conversión</h3>
+                <div className="space-y-3">
+                  {funnel.map((f, i) => {
+                    const [lbl, val, color] = f;
+                    const prev = i > 0 ? funnel[i - 1][1] : val;
+                    const pct = prev > 0 ? Math.round((val / prev) * 100) : 0;
+                    return (
+                      <div key={lbl}>
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span className="text-muted/70">{lbl}</span>
+                          <span className="text-white font-medium">{val}{i > 0 && <span className="text-muted/40 ml-2">({pct}% del paso anterior)</span>}</span>
+                        </div>
+                        <div className="h-6 rounded-lg bg-white/5 overflow-hidden">
+                          <div className={`h-full rounded-lg bg-gradient-to-r ${color}`} style={{ width: `${Math.max(4, (val / funnelMax) * 100)}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           );
@@ -795,6 +832,32 @@ export default function AdminPage() {
               <div><label className={label}>Nota del checkout</label><textarea value={site.billing.checkoutNote} onChange={(e) => setSiteField(['billing', 'checkoutNote'], e.target.value)} rows={2} className={`${input} resize-none`} /></div>
             </div>
 
+            {/* Chat con IA */}
+            <div className={card}>
+              <h3 className="font-semibold text-sm mb-1 flex items-center gap-2"><Bot className="w-4 h-4 text-neon-blue" /> Chat con IA (agente de ventas)</h3>
+              <p className="text-xs text-muted/50 mb-4">Elegí el proveedor. La clave (API key) se carga en variables de entorno del servidor. Ollama es gratis y local (no requiere clave).</p>
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div>
+                  <label className={label}>Proveedor</label>
+                  <select value={site.ai?.provider || 'anthropic'} onChange={(e) => setSiteField(['ai', 'provider'], e.target.value)} className={`${input} [&>option]:bg-surface`}>
+                    <option value="anthropic">Anthropic (Claude)</option>
+                    <option value="openai">OpenAI (GPT)</option>
+                    <option value="deepseek">DeepSeek</option>
+                    <option value="qwen">Qwen (DashScope)</option>
+                    <option value="groq">Groq</option>
+                    <option value="openrouter">OpenRouter</option>
+                    <option value="mistral">Mistral</option>
+                    <option value="gemini">Google Gemini</option>
+                    <option value="ollama">Ollama (local · gratis)</option>
+                    <option value="custom">Personalizado (OpenAI-compatible)</option>
+                  </select>
+                </div>
+                <div><label className={label}>Modelo (opcional)</label><input value={site.ai?.model || ''} onChange={(e) => setSiteField(['ai', 'model'], e.target.value)} placeholder="ej: deepseek-chat, llama3.1" className={input} /></div>
+                <div><label className={label}>Base URL (custom/Ollama)</label><input value={site.ai?.baseUrl || ''} onChange={(e) => setSiteField(['ai', 'baseUrl'], e.target.value)} placeholder="http://localhost:11434/v1" className={input} /></div>
+              </div>
+              <p className="text-[11px] text-muted/40 mt-2">Claves por proveedor: ANTHROPIC_API_KEY, OPENAI_API_KEY, DEEPSEEK_API_KEY, QWEN_API_KEY, GROQ_API_KEY, OPENROUTER_API_KEY, MISTRAL_API_KEY, GEMINI_API_KEY — o una genérica AI_API_KEY.</p>
+            </div>
+
             <div className="sticky bottom-4 flex justify-end">
               <button onClick={saveSite} disabled={saving} className={btnPrimary}><Save className="w-4 h-4" /> {saving ? 'Guardando...' : 'Guardar todo el sitio'}</button>
             </div>
@@ -1024,6 +1087,16 @@ export default function AdminPage() {
                 <button onClick={() => downloadAudience('google')} className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-border/30 text-sm text-white hover:border-neon-blue/40 hover:shadow-[0_0_15px_rgba(0,212,255,0.1)] transition-all"><Download className="w-4 h-4" /> Google Ads (Customer Match)</button>
                 <button onClick={() => downloadAudience('meta')} className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-border/30 text-sm text-white hover:border-neon-purple/40 hover:shadow-[0_0_15px_rgba(124,58,237,0.1)] transition-all"><Download className="w-4 h-4" /> Meta (Custom Audience)</button>
               </div>
+            </div>
+
+            <div className={card}>
+              <h3 className="font-semibold text-sm mb-1 flex items-center gap-2"><RefreshCw className="w-4 h-4 text-neon-green" /> Sincronización automática por API</h3>
+              <p className="text-xs text-muted/50 mb-4">Envía tus leads directamente a la audiencia configurada (sin descargar CSV). Requiere las credenciales de cada plataforma en variables de entorno.</p>
+              <div className="flex flex-wrap gap-3">
+                <button onClick={() => syncAudience('google')} className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-neon-blue/80 to-neon-blue/40 text-white text-sm hover:shadow-[0_0_20px_rgba(0,212,255,0.25)] transition-all"><RefreshCw className="w-4 h-4" /> Sincronizar con Google Ads</button>
+                <button onClick={() => syncAudience('meta')} className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-neon-purple/80 to-neon-purple/40 text-white text-sm hover:shadow-[0_0_20px_rgba(124,58,237,0.25)] transition-all"><RefreshCw className="w-4 h-4" /> Sincronizar con Meta</button>
+              </div>
+              <p className="text-[11px] text-muted/40 mt-2">Meta: META_ACCESS_TOKEN, META_CUSTOM_AUDIENCE_ID · Google: GOOGLE_ADS_DEVELOPER_TOKEN, GOOGLE_ADS_CUSTOMER_ID, GOOGLE_ADS_USER_LIST_ID + OAuth.</p>
             </div>
             <div className={card}>
               <h3 className="font-semibold text-sm mb-1">Píxeles y seguimiento</h3>

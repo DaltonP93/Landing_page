@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { readData, writeData, isAdmin } from '@/lib/store';
 import { notifyTeam } from '@/lib/provision';
 import { getLivePromotions, type Promotion } from '@/lib/promotions';
+import { chatComplete } from '@/lib/ai';
 import products from '@/data/products.json';
 import site from '@/data/site.json';
 import promotionsData from '@/data/promotions.json';
@@ -42,43 +43,7 @@ REGLAS:
 - Moneda: guaraníes (Gs.).`;
 }
 
-/* ── Proveedores de IA ── */
-async function callAnthropic(system: string, messages: ChatMessage[]): Promise<string | null> {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) return null;
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({
-      model: process.env.AI_MODEL || 'claude-3-5-haiku-latest',
-      max_tokens: 400,
-      system,
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
-    }),
-  });
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data?.content?.[0]?.text ?? null;
-}
-
-async function callOpenAI(system: string, messages: ChatMessage[]): Promise<string | null> {
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) return null;
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: process.env.AI_MODEL || 'gpt-4o-mini',
-      max_tokens: 400,
-      messages: [{ role: 'system', content: system }, ...messages],
-    }),
-  });
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data?.choices?.[0]?.message?.content ?? null;
-}
-
-/** Respuesta de respaldo si no hay API key configurada. */
+/** Respuesta de respaldo si no hay proveedor de IA configurado. */
 function fallbackReply(text: string): string {
   const lower = text.toLowerCase();
   if (lower.match(/precio|cuesta|cuanto|cuánto|plan/)) {
@@ -107,14 +72,7 @@ export async function POST(request: NextRequest) {
   }
 
   const system = buildSystemPrompt();
-  let reply: string | null = null;
-  const provider = (process.env.AI_PROVIDER || 'anthropic').toLowerCase();
-  try {
-    reply = provider === 'openai' ? await callOpenAI(system, messages) : await callAnthropic(system, messages);
-    if (!reply && provider !== 'openai') reply = await callOpenAI(system, messages);
-  } catch {
-    reply = null;
-  }
+  let reply = await chatComplete(system, messages);
   const lastUser = [...messages].reverse().find((m) => m.role === 'user')?.content || '';
   if (!reply) reply = fallbackReply(lastUser);
 

@@ -5,6 +5,7 @@ import nodemailer from 'nodemailer';
 import crypto from 'crypto';
 import products from '@/data/products.json';
 import site from '@/data/site.json';
+import { sendTeamEmail } from '@/lib/provision';
 
 const COMPANY = site.company.name;
 
@@ -258,6 +259,10 @@ export async function POST(request: NextRequest) {
     createDemoInProduct(productId, account),
     sendCredentialsEmail(account),
     notifyTeam(account),
+    sendTeamEmail(
+      `Nueva demo — ${account.company}`,
+      `Nueva solicitud de demo:\n\nNombre: ${account.name}\nEmpresa: ${account.company}\nEmail: ${account.email}\nTeléfono: ${account.phone}\nProducto: ${account.productName}\nUsuario: ${account.username}\nExpira: ${new Date(account.expiresAt).toLocaleDateString('es-PY')}`
+    ),
   ]);
 
   return NextResponse.json({

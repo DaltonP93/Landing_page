@@ -1,4 +1,26 @@
 import site from '@/data/site.json';
+import nodemailer from 'nodemailer';
+
+/** Envía un email de aviso al equipo (NOTIFICATION_EMAIL o SMTP_USER). Fire-and-forget. */
+export async function sendTeamEmail(subject: string, text: string): Promise<void> {
+  const host = process.env.SMTP_HOST;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  const to = process.env.NOTIFICATION_EMAIL || user;
+  if (!host || !user || !pass || !to) return;
+  try {
+    const port = Number(process.env.SMTP_PORT || '587');
+    const transporter = nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
+    await transporter.sendMail({
+      from: `"${site.company.name}" <${process.env.EMAIL_FROM || user}>`,
+      to,
+      subject,
+      text,
+    });
+  } catch {
+    /* noop */
+  }
+}
 
 export interface AccountLike {
   username?: string;
@@ -46,6 +68,9 @@ export async function setProductAccess(
 
 /** Notifica al equipo por WhatsApp (Meta Cloud API). Fire-and-forget. */
 export async function notifyTeam(message: string): Promise<void> {
+  // Email (independiente de WhatsApp)
+  sendTeamEmail(`${site.company.name} — Notificación`, message);
+
   const token = process.env.WHATSAPP_API_TOKEN;
   const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
   const to = process.env.NOTIFICATION_PHONE;

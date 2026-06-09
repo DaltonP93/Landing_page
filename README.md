@@ -10,8 +10,12 @@ completo** para editar todo el contenido sin tocar código.
 - **Diseño futurista sci-fi** — glassmorphism, orbes 3D, partículas animadas, glow neón, gradientes animados.
 - **CMS por JSON + API REST** — todo el contenido vive en `src/data/*.json` y se edita desde `/admin`.
 - **Dashboard de métricas** — KPIs de ventas, leads, conversión e ingresos, con gráficas por producto.
-- **Chat con IA (agente de ventas)** — atiende, recomienda, responde y **capta los leads** (email/teléfono),
-  guardándolos y avisando al equipo por WhatsApp. Soporta Anthropic y OpenAI (con bot de respaldo).
+- **Chat con IA (agente de ventas) multi-proveedor** — atiende, recomienda y **capta los leads** (email/teléfono),
+  avisando al equipo por WhatsApp **y email**. Soporta Anthropic, OpenAI, **DeepSeek, Qwen, Groq, OpenRouter,
+  Mistral, Gemini y Ollama** (local/gratis) o cualquier endpoint OpenAI-compatible; con bot de respaldo.
+- **Embudo de conversión** en el dashboard (leads → demos → contrataciones → clientes activos) con % por paso.
+- **Sincronización de audiencias por API** — envío directo de leads a **Meta Custom Audiences** y **Google Ads Customer Match** (además del export CSV).
+- **Notificaciones por email + WhatsApp** al equipo en cada demo, contratación y lead del chat.
 - **Blog del CEO** — gestión de artículos en Markdown + páginas públicas (`/blog`) con SEO y JSON-LD.
 - **Marketing** — exportación de audiencias (emails/teléfonos SHA256) para **Google Ads Customer Match** y **Meta Custom Audiences**.
 - **Panel admin integral** (`/admin`) con 9 módulos:
