@@ -1,15 +1,57 @@
-import { readData, writeData } from './store';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { join, dirname } from 'path';
+import crypto from 'crypto';
 
-const PATH = 'data/secrets.json';
+const PATH = join(process.cwd(), 'data/secrets.json');
 export type SecretStore = Record<string, string>;
 
+/* ── Cifrado AES-256-GCM (en reposo) ──
+ * Si existe APP_SECRET, los secretos se guardan cifrados. Sin APP_SECRET
+ * se guardan en texto plano (modo desarrollo) de forma compatible. */
+function key(): Buffer | null {
+  const s = process.env.APP_SECRET;
+  if (!s) return null;
+  return crypto.scryptSync(s, 'novatech-secrets-salt', 32);
+}
+
+function encrypt(json: string): string {
+  const k = key();
+  if (!k) return json; // sin APP_SECRET → texto plano
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', k, iv);
+  const enc = Buffer.concat([cipher.update(json, 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return `enc:v1:${iv.toString('hex')}:${tag.toString('hex')}:${enc.toString('hex')}`;
+}
+
+function decrypt(raw: string): string {
+  if (!raw.startsWith('enc:v1:')) return raw; // texto plano
+  const k = key();
+  if (!k) return '{}';
+  const [, , ivHex, tagHex, dataHex] = raw.split(':');
+  const decipher = crypto.createDecipheriv('aes-256-gcm', k, Buffer.from(ivHex, 'hex'));
+  decipher.setAuthTag(Buffer.from(tagHex, 'hex'));
+  const dec = Buffer.concat([decipher.update(Buffer.from(dataHex, 'hex')), decipher.final()]);
+  return dec.toString('utf8');
+}
+
 export function readSecrets(): SecretStore {
-  return readData<SecretStore>(PATH, {});
+  if (!existsSync(PATH)) return {};
+  try {
+    return JSON.parse(decrypt(readFileSync(PATH, 'utf8').trim()));
+  } catch {
+    return {};
+  }
+}
+
+function writeSecrets(store: SecretStore): void {
+  const dir = dirname(PATH);
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  writeFileSync(PATH, encrypt(JSON.stringify(store, null, 2)), 'utf8');
 }
 
 /**
  * Devuelve un secreto. Prioridad: panel (data/secrets.json) → variable de entorno.
- * Así lo configurado en la página manda, con fallback a .env del servidor.
  */
 export function getSecret(name: string): string {
   const s = readSecrets();
@@ -25,10 +67,9 @@ export function setSecrets(partial: SecretStore): void {
     if (v === '__CLEAR__') { delete next[k]; continue; }
     next[k] = v;
   }
-  writeData(PATH, next);
+  writeSecrets(next);
 }
 
-/** Catálogo de claves configurables desde el panel, agrupadas. */
 export const SECRET_GROUPS: { group: string; keys: { name: string; label: string }[] }[] = [
   { group: 'IA / Chat', keys: [
     { name: 'AI_API_KEY', label: 'Clave genérica de IA' },
@@ -78,7 +119,6 @@ export const SECRET_GROUPS: { group: string; keys: { name: string; label: string
   ] },
 ];
 
-/** Estado enmascarado de cada clave (nunca devuelve el valor real). */
 export function secretsStatus() {
   const file = readSecrets();
   return SECRET_GROUPS.map((g) => ({

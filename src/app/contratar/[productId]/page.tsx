@@ -18,7 +18,7 @@ function CheckoutInner() {
 
   const product = products.find((p) => p.id === params.productId);
   const [plan, setPlan] = useState<'monthly' | 'annual'>(planParam);
-  const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', paymentMethod: site.billing.paymentMethods[0] });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', paymentMethod: site.billing.paymentMethods[0], website: '' });
   const [step, setStep] = useState<Step>('form');
   const [error, setError] = useState('');
   const [result, setResult] = useState<{ amount: number; bankInfo: string; note: string; instructions?: string; gateway?: string; promoApplied: { code: string; percent: number } | null } | null>(null);
@@ -92,6 +92,7 @@ function CheckoutInner() {
           <div className="grid md:grid-cols-[1fr_320px] gap-6">
             {/* Formulario */}
             <form onSubmit={submit} className="rounded-2xl glass-strong p-7 order-2 md:order-1">
+              <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" value={form.website} onChange={(e) => update('website', e.target.value)} className="hidden" />
               <h1 className="text-xl font-bold mb-1">Contratar {product.name}</h1>
               <p className="text-xs text-muted/60 mb-6">Completá tus datos y te activamos la cuenta.</p>
 

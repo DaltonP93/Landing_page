@@ -17,6 +17,7 @@ export default function DemoRequest() {
     company: '',
     employees: '',
     product: '',
+    website: '', // honeypot anti-bot (debe quedar vacío)
   });
   const [error, setError] = useState('');
 
@@ -81,7 +82,7 @@ export default function DemoRequest() {
               el usuario y contraseña para acceder a <strong className="text-white">{sorted.find(p => p.id === form.product)?.name}</strong> durante 15 días.
             </p>
             <button
-              onClick={() => { setStep('form'); setForm({ name: '', email: '', phone: '', company: '', employees: '', product: '' }); }}
+              onClick={() => { setStep('form'); setForm({ name: '', email: '', phone: '', company: '', employees: '', product: '', website: '' }); }}
               className="mt-6 text-xs text-neon-purple hover:text-neon-blue transition-colors"
             >
               Solicitar otra demo
@@ -89,6 +90,8 @@ export default function DemoRequest() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="rounded-xl glass-strong p-8 shadow-[0_0_40px_rgba(0,0,0,0.3)]">
+            {/* Honeypot anti-bot (oculto) */}
+            <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" value={form.website} onChange={(e) => update('website', e.target.value)} className="hidden" />
             {/* Product selection */}
             <div className="mb-8">
               <label className="block text-xs font-medium text-muted/70 mb-3">¿Qué producto querés probar?</label>

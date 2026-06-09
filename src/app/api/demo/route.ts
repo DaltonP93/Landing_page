@@ -7,6 +7,7 @@ import products from '@/data/products.json';
 import site from '@/data/site.json';
 import { sendTeamEmail } from '@/lib/provision';
 import { getSecret } from '@/lib/secrets';
+import { rateLimit, clientIp } from '@/lib/rate-limit';
 
 const COMPANY = site.company.name;
 
@@ -214,8 +215,14 @@ async function notifyTeam(account: DemoAccount) {
 }
 
 export async function POST(request: NextRequest) {
+  const rl = rateLimit(`demo:${clientIp(request)}`, 5, 60_000);
+  if (!rl.ok) return NextResponse.json({ error: 'Demasiadas solicitudes. Esperá un minuto.' }, { status: 429 });
+
   const body = await request.json();
   const { name, email, phone, company, employees, product: productId } = body;
+
+  // Honeypot anti-bot: si el campo oculto viene completo, es un bot
+  if (body.website) return NextResponse.json({ status: 'ok' });
 
   if (!name || !email || !company || !productId) {
     return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 });

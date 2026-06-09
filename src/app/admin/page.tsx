@@ -100,7 +100,7 @@ interface SecretGroup {
   keys: { name: string; label: string; configured: boolean; source: string; hint: string }[];
 }
 
-type Tab = 'dashboard' | 'productos' | 'sitio' | 'promociones' | 'campanas' | 'marketing' | 'cobros' | 'leads' | 'blog' | 'ajustes';
+type Tab = 'dashboard' | 'productos' | 'sitio' | 'promociones' | 'campanas' | 'marketing' | 'cobros' | 'leads' | 'blog' | 'ajustes' | 'usuarios';
 
 /* ─────────────────── Estilos reutilizables ─────────────────── */
 
@@ -174,9 +174,14 @@ function IconPicker({ value, onChange }: { value: string; onChange: (v: string) 
 
 export default function AdminPage() {
   const [apiKey, setApiKey] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [role, setRole] = useState<string>('admin');
   const [authenticated, setAuthenticated] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [loggingIn, setLoggingIn] = useState(false);
+  const [users, setUsers] = useState<{ id: string; username: string; role: string; createdAt: string }[]>([]);
+  const [newUser, setNewUser] = useState({ username: '', password: '', role: 'viewer' });
 
   const [products, setProducts] = useState<Product[]>([]);
   const [site, setSite] = useState<SiteData | null>(null);
@@ -197,7 +202,7 @@ export default function AdminPage() {
   /* ── Sesión persistente ── */
   useEffect(() => {
     const stored = sessionStorage.getItem('admin_key');
-    if (stored) { setApiKey(stored); setAuthenticated(true); }
+    if (stored) { setApiKey(stored); setRole(sessionStorage.getItem('admin_role') || 'admin'); setAuthenticated(true); }
   }, []);
 
   const loadAll = useCallback((key: string) => {
@@ -225,6 +230,10 @@ export default function AdminPage() {
       .then((r) => (r.ok ? r.json() : []))
       .then(setSecretsState)
       .catch(() => {});
+    fetch('/api/users', { headers: { 'x-api-key': key } })
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setUsers)
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -234,19 +243,24 @@ export default function AdminPage() {
   const flash = (msg: string) => { setMessage(msg); setTimeout(() => setMessage(''), 3000); };
 
   const login = async () => {
-    if (!apiKey) return;
+    if (!username && !apiKey) return;
     setLoggingIn(true); setLoginError('');
     try {
+      const payload = username ? { username, password } : { apiKey };
       const res = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        throw new Error(d.error || 'Clave incorrecta');
+        throw new Error(d.error || 'Credenciales incorrectas');
       }
-      sessionStorage.setItem('admin_key', apiKey);
+      const data = await res.json();
+      sessionStorage.setItem('admin_key', data.token);
+      sessionStorage.setItem('admin_role', data.role);
+      setApiKey(data.token);
+      setRole(data.role);
       setAuthenticated(true);
     } catch (e) {
       setLoginError(e instanceof Error ? e.message : 'Error');
@@ -257,7 +271,34 @@ export default function AdminPage() {
 
   const logout = () => {
     sessionStorage.removeItem('admin_key');
-    setAuthenticated(false); setApiKey('');
+    sessionStorage.removeItem('admin_role');
+    setAuthenticated(false); setApiKey(''); setUsername(''); setPassword('');
+  };
+
+  /* ── Usuarios (solo rol admin) ── */
+  const loadUsers = useCallback(() => {
+    fetch('/api/users', { headers: { 'x-api-key': apiKey } })
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setUsers)
+      .catch(() => {});
+  }, [apiKey]);
+
+  const addUser = async () => {
+    if (!newUser.username || !newUser.password) return;
+    const res = await fetch('/api/users', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey }, body: JSON.stringify(newUser) });
+    if (res.ok) { setNewUser({ username: '', password: '', role: 'viewer' }); loadUsers(); flash('✓ Usuario creado'); }
+    else { const d = await res.json().catch(() => ({})); flash(`✗ ${d.error || 'Error'}`); }
+  };
+
+  const updateUserRole = async (id: string, r: string) => {
+    const res = await fetch('/api/users', { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey }, body: JSON.stringify({ id, role: r }) });
+    if (res.ok) { loadUsers(); flash('✓ Rol actualizado'); }
+  };
+
+  const deleteUser = async (id: string) => {
+    const res = await fetch('/api/users', { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey }, body: JSON.stringify({ id }) });
+    if (res.ok) { loadUsers(); flash('✓ Usuario eliminado'); }
+    else { const d = await res.json().catch(() => ({})); flash(`✗ ${d.error || 'Error'}`); }
   };
 
   /* ── Guardado ── */
@@ -434,13 +475,28 @@ export default function AdminPage() {
           <h1 className="text-xl font-bold text-white text-center glow-text">Panel de Administración</h1>
           <p className="text-xs text-muted/60 text-center mt-1 mb-6">Ingresá tu API key para gestionar el contenido</p>
           <input
-            type="password" placeholder="API Key" value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
+            type="text" placeholder="Usuario" value={username} autoComplete="username"
+            onChange={(e) => setUsername(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && login()}
             className={`${input} mb-3`}
           />
+          <input
+            type="password" placeholder="Contraseña" value={password} autoComplete="current-password"
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && login()}
+            className={`${input} mb-3`}
+          />
+          <details className="mb-3">
+            <summary className="text-[11px] text-muted/50 cursor-pointer hover:text-neon-blue">o ingresar con API key</summary>
+            <input
+              type="password" placeholder="API Key" value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && login()}
+              className={`${input} mt-2`}
+            />
+          </details>
           {loginError && <p className="text-xs text-neon-pink mb-3">{loginError}</p>}
-          <button onClick={login} disabled={loggingIn || !apiKey} className={`${btnPrimary} w-full justify-center`}>
+          <button onClick={login} disabled={loggingIn || (!username && !apiKey)} className={`${btnPrimary} w-full justify-center`}>
             {loggingIn ? 'Verificando...' : 'Acceder'}
           </button>
           <a href="/" className="block text-center text-xs text-muted/50 hover:text-neon-blue mt-4 transition-colors">← Volver a la landing</a>
@@ -487,7 +543,10 @@ export default function AdminPage() {
             ['leads', 'Leads', UsersIcon, activeDemos + chatLeads.length],
             ['blog', 'Blog', Newspaper, blog.length],
             ['ajustes', 'Ajustes', KeyRound, null],
-          ] as [Tab, string, React.ComponentType<React.SVGProps<SVGSVGElement>>, number | null][]).map(([t, lbl, Ico, count]) => (
+            ['usuarios', 'Usuarios', UsersIcon, users.length],
+          ] as [Tab, string, React.ComponentType<React.SVGProps<SVGSVGElement>>, number | null][])
+            .filter(([t]) => !((t === 'ajustes' || t === 'usuarios') && role !== 'admin'))
+            .map(([t, lbl, Ico, count]) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -1232,6 +1291,45 @@ export default function AdminPage() {
             ))}
             <div className="sticky bottom-4 flex justify-end">
               <button onClick={saveSecrets} disabled={saving} className={btnPrimary}><Save className="w-4 h-4" /> {saving ? 'Guardando...' : 'Guardar credenciales'}</button>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════ USUARIOS ═══════════ */}
+        {tab === 'usuarios' && (
+          <div className="space-y-4">
+            <p className="text-xs text-muted/50">Gestioná los usuarios del panel y sus roles. <strong className="text-white">admin</strong>: acceso total. <strong className="text-white">editor</strong>: edita contenido. <strong className="text-white">viewer</strong>: solo lectura.</p>
+            <div className={card}>
+              <h3 className="font-semibold text-sm mb-4">Nuevo usuario</h3>
+              <div className="grid sm:grid-cols-4 gap-3">
+                <input value={newUser.username} onChange={(e) => setNewUser({ ...newUser, username: e.target.value })} placeholder="Usuario" className={input} />
+                <input type="password" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} placeholder="Contraseña" className={input} />
+                <select value={newUser.role} onChange={(e) => setNewUser({ ...newUser, role: e.target.value })} className={`${input} [&>option]:bg-surface`}>
+                  <option value="viewer">Viewer</option><option value="editor">Editor</option><option value="admin">Admin</option>
+                </select>
+                <button onClick={addUser} className={btnPrimary}><Plus className="w-4 h-4" /> Crear</button>
+              </div>
+            </div>
+            <div className="rounded-xl glass border border-border/20 overflow-hidden overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead><tr className="border-b border-border/20 text-left text-[11px] uppercase tracking-wide text-muted/50">
+                  <th className="p-3 font-medium">Usuario</th><th className="p-3 font-medium">Rol</th><th className="p-3 font-medium">Creado</th><th className="p-3"></th>
+                </tr></thead>
+                <tbody>
+                  {users.map((u) => (
+                    <tr key={u.id} className="border-b border-border/10 hover:bg-white/[0.02]">
+                      <td className="p-3 text-white">{u.username}</td>
+                      <td className="p-3">
+                        <select value={u.role} onChange={(e) => updateUserRole(u.id, e.target.value)} className="bg-surface/50 border border-border/30 rounded px-2 py-1 text-xs text-white focus:outline-none [&>option]:bg-surface">
+                          <option value="viewer">Viewer</option><option value="editor">Editor</option><option value="admin">Admin</option>
+                        </select>
+                      </td>
+                      <td className="p-3 text-xs text-muted/40">{new Date(u.createdAt).toLocaleDateString('es-PY')}</td>
+                      <td className="p-3"><button onClick={() => deleteUser(u.id)} className="p-2 text-muted/40 hover:text-neon-pink"><Trash2 className="w-4 h-4" /></button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}

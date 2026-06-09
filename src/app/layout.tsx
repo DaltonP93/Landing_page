@@ -4,6 +4,7 @@ import "./globals.css";
 import siteData from "@/data/site.json";
 import Analytics from "@/components/Analytics";
 import JsonLd from "@/components/JsonLd";
+import CookieConsent from "@/components/CookieConsent";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -55,6 +56,7 @@ export default function RootLayout({
         <Analytics />
         <JsonLd />
         {children}
+        <CookieConsent />
       </body>
     </html>
   );

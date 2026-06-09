@@ -4,6 +4,7 @@ import { readData, writeData } from '@/lib/store';
 import { notifyTeam, COMPANY_NAME } from '@/lib/provision';
 import { getPromoForProduct, applyDiscount, type Promotion } from '@/lib/promotions';
 import { createPayment } from '@/lib/gateways';
+import { rateLimit, clientIp } from '@/lib/rate-limit';
 import products from '@/data/products.json';
 import site from '@/data/site.json';
 
@@ -31,8 +32,13 @@ export interface Subscription {
 }
 
 export async function POST(request: NextRequest) {
+  const rl = rateLimit(`checkout:${clientIp(request)}`, 5, 60_000);
+  if (!rl.ok) return NextResponse.json({ error: 'Demasiadas solicitudes. Esperá un minuto.' }, { status: 429 });
+
   const body = await request.json();
   const { name, email, phone, company, productId, plan, paymentMethod } = body;
+
+  if (body.website) return NextResponse.json({ status: 'ok' }); // honeypot anti-bot
 
   if (!name || !email || !company || !productId || !plan) {
     return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 });

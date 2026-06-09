@@ -53,6 +53,8 @@ export default function Footer() {
         <div className="mt-10 pt-6 border-t border-border/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-muted/30">
           <span>&copy; {new Date().getFullYear()} {siteData.company.name}. Todos los derechos reservados.</span>
           <div className="flex items-center gap-4">
+            <a href="/privacidad" className="hover:text-neon-blue transition-colors">Privacidad</a>
+            <a href="/terminos" className="hover:text-neon-blue transition-colors">Términos</a>
             <a href={siteData.footer.socialLinks.instagram} className="hover:text-neon-blue transition-colors">Instagram</a>
             <a href={siteData.footer.socialLinks.linkedin} className="hover:text-neon-blue transition-colors">LinkedIn</a>
             <a href={siteData.footer.socialLinks.facebook} className="hover:text-neon-blue transition-colors">Facebook</a>

@@ -4,6 +4,7 @@ import { readData, writeData, isAdmin } from '@/lib/store';
 import { notifyTeam } from '@/lib/provision';
 import { getLivePromotions, type Promotion } from '@/lib/promotions';
 import { chatComplete } from '@/lib/ai';
+import { rateLimit, clientIp } from '@/lib/rate-limit';
 import products from '@/data/products.json';
 import site from '@/data/site.json';
 import promotionsData from '@/data/promotions.json';
@@ -66,6 +67,9 @@ function extractPhone(s: string): string | null {
 }
 
 export async function POST(request: NextRequest) {
+  const rl = rateLimit(`chat:${clientIp(request)}`, 20, 60_000);
+  if (!rl.ok) return NextResponse.json({ reply: 'Estás enviando mensajes muy rápido. Esperá un momento e intentá de nuevo. 🙏' }, { status: 429 });
+
   const { messages } = (await request.json()) as { messages: ChatMessage[] };
   if (!Array.isArray(messages) || messages.length === 0) {
     return NextResponse.json({ error: 'Sin mensajes' }, { status: 400 });

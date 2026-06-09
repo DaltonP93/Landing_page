@@ -39,6 +39,7 @@ yarn-error.log*
 /data/chat-leads.json
 /data/secrets.json
 /data/cron-log.json
+/data/users.json
 
 # imágenes subidas desde el panel (runtime)
 /public/uploads/*

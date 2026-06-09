@@ -21,6 +21,11 @@ completo** para editar todo el contenido sin tocar código.
 - **Sincronización automática diaria** de audiencias por cron (`/api/cron/sync-audiences`, Vercel Cron o crontab).
 - **Multimoneda (PYG / USD)** con tasa de cambio editable y conversión en vivo en la sección de precios.
 - **Historial de conversaciones del chat IA** por lead, visible y expandible en el panel.
+- **Autenticación con usuarios y roles** (admin / editor / viewer) — login con usuario y contraseña
+  (hash scrypt + token de sesión firmado), gestión de usuarios desde el panel; la API key sigue como acceso maestro.
+- **Credenciales cifradas** en reposo (AES-256-GCM con `APP_SECRET`).
+- **Páginas legales** (`/privacidad`, `/terminos`) + **banner de cookies** que activa los píxeles solo con consentimiento.
+- **Rate limiting** y **honeypot anti-bot** en chat, demos y checkout.
 - **Blog del CEO** — gestión de artículos en Markdown + páginas públicas (`/blog`) con SEO y JSON-LD.
 - **Marketing** — exportación de audiencias (emails/teléfonos SHA256) para **Google Ads Customer Match** y **Meta Custom Audiences**.
 - **Panel admin integral** (`/admin`) con 9 módulos:
