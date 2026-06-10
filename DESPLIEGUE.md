@@ -108,7 +108,7 @@ npm run build
 ## 4. PM2 (mantener la app corriendo)
 
 ```bash
-pm2 start npm --name landing -- start
+pm2 start ecosystem.config.js
 pm2 save
 pm2 startup     # ejecutá el comando que imprime (para arrancar al bootear)
 ```
@@ -210,12 +210,16 @@ sudo ufw enable
 
 ## 10. Actualizar el sitio (deploy de cambios)
 
+Automatizado con el script incluido:
 ```bash
 cd /var/www/landing
-git pull origin main
-npm install
-npm run build
-pm2 reload landing
+chmod +x deploy.sh   # solo la primera vez
+./deploy.sh          # git pull + install + build + pm2 reload + save
+```
+
+O manualmente:
+```bash
+git pull origin main && npm install && npm run build && pm2 reload ecosystem.config.js
 ```
 
 ---
