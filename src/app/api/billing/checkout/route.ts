@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { readData, writeData } from '@/lib/store';
+import { readData } from '@/lib/store';
+import { getSubscriptions, saveSubscriptions } from '@/lib/repo';
 import { notifyTeam, COMPANY_NAME } from '@/lib/provision';
 import { getPromoForProduct, applyDiscount, type Promotion } from '@/lib/promotions';
 import { createPayment } from '@/lib/gateways';
@@ -8,7 +9,6 @@ import { rateLimit, clientIp } from '@/lib/rate-limit';
 import products from '@/data/products.json';
 import site from '@/data/site.json';
 
-const SUBS_PATH = 'data/subscriptions.json';
 
 export interface Subscription {
   id: string;
@@ -86,9 +86,9 @@ export async function POST(request: NextRequest) {
   sub.gateway = payment.method;
   sub.paymentRef = payment.reference;
 
-  const subs = readData<Subscription[]>(SUBS_PATH, []);
+  const subs = await getSubscriptions<Subscription[]>([]);
   subs.push(sub);
-  writeData(SUBS_PATH, subs);
+  await saveSubscriptions(subs);
 
   notifyTeam(
     `💳 *Nueva contratación*\n\n👤 ${name}\n🏢 ${company}\n📧 ${email}\n📱 ${phone}\n📦 ${product.name} (${plan === 'annual' ? 'anual' : 'mensual'})\n💰 Gs. ${amount.toLocaleString('es-PY')}${promo ? `\n🏷️ Promo: ${promo.code}` : ''}\n💵 ${sub.paymentMethod}\n\nEstado: PENDIENTE de pago`

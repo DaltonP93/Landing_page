@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { readData, isAdmin } from '@/lib/store';
+import { isAdmin } from '@/lib/store';
+import { getDemos, getSubscriptions, getChatLeads } from '@/lib/repo';
 
 interface HasEmail { email: string; phone?: string }
 
@@ -23,9 +24,9 @@ export async function GET(request: NextRequest) {
 
   const type = (request.nextUrl.searchParams.get('type') || 'google').toLowerCase();
 
-  const demos = readData<HasEmail[]>('data/demos.json', []);
-  const subs = readData<HasEmail[]>('data/subscriptions.json', []);
-  const chat = readData<HasEmail[]>('data/chat-leads.json', []);
+  const demos = await getDemos<HasEmail[]>([]);
+  const subs = await getSubscriptions<HasEmail[]>([]);
+  const chat = await getChatLeads<HasEmail[]>([]);
 
   // Dedupe por email normalizado
   const map = new Map<string, { email: string; phone: string }>();

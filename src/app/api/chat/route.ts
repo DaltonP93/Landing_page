@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { readData, writeData, isAdmin } from '@/lib/store';
+import { isAdmin } from '@/lib/store';
+import { getChatLeads, saveChatLeads } from '@/lib/repo';
 import { notifyTeam } from '@/lib/provision';
 import { getLivePromotions, type Promotion } from '@/lib/promotions';
 import { chatComplete } from '@/lib/ai';
@@ -8,8 +9,6 @@ import { rateLimit, clientIp } from '@/lib/rate-limit';
 import products from '@/data/products.json';
 import site from '@/data/site.json';
 import promotionsData from '@/data/promotions.json';
-
-const LEADS_PATH = 'data/chat-leads.json';
 
 interface ChatMessage { role: 'user' | 'assistant'; content: string }
 interface ChatLead {
@@ -84,7 +83,7 @@ export async function POST(request: NextRequest) {
   const userText = messages.filter((m) => m.role === 'user').map((m) => m.content).join('\n');
   const email = extractEmail(userText);
   if (email) {
-    const leads = readData<ChatLead[]>(LEADS_PATH, []);
+    const leads = await getChatLeads<ChatLead[]>([]);
     // Transcripción completa de la conversación (incluye la respuesta de la IA)
     const fullTranscript = [...messages, { role: 'assistant' as const, content: reply }]
       .map((m) => `${m.role === 'user' ? 'Cliente' : 'IA'}: ${m.content}`)
@@ -95,7 +94,7 @@ export async function POST(request: NextRequest) {
       existing.phone = existing.phone || extractPhone(userText) || '';
       existing.lastMessage = lastUser.slice(0, 200);
       existing.transcript = fullTranscript;
-      writeData(LEADS_PATH, leads);
+      await saveChatLeads(leads);
     } else {
       const lead: ChatLead = {
         id: crypto.randomUUID(),
@@ -108,7 +107,7 @@ export async function POST(request: NextRequest) {
         transcript: fullTranscript,
       };
       leads.push(lead);
-      writeData(LEADS_PATH, leads);
+      await saveChatLeads(leads);
       notifyTeam(`🤖 *Nuevo lead del chat IA*\n\n📧 ${email}\n📱 ${lead.phone || '—'}\n💬 "${lead.interest}"`);
     }
   }
@@ -119,5 +118,5 @@ export async function POST(request: NextRequest) {
 /** Leads captados por el chat (panel admin). */
 export async function GET(request: NextRequest) {
   if (!isAdmin(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  return NextResponse.json(readData<ChatLead[]>(LEADS_PATH, []));
+  return NextResponse.json(await getChatLeads<ChatLead[]>([]));
 }

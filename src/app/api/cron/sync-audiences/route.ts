@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeData } from '@/lib/store';
 import { getSecret } from '@/lib/secrets';
+import { saveCronLog } from '@/lib/repo';
 import { buildEmailHashes, syncMeta, syncGoogle } from '@/lib/audiences';
 
 /**
@@ -23,12 +23,12 @@ function authorized(request: NextRequest): boolean {
 export async function GET(request: NextRequest) {
   if (!authorized(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const hashes = buildEmailHashes();
+  const hashes = await buildEmailHashes();
   const meta = await syncMeta(hashes);
   const google = await syncGoogle(hashes);
 
   const log = { at: new Date().toISOString(), total: hashes.length, meta, google };
-  writeData('data/cron-log.json', log);
+  await saveCronLog(log);
 
   return NextResponse.json({ status: 'ok', ...log });
 }

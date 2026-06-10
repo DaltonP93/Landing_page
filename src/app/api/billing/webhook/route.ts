@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { readData, writeData } from '@/lib/store';
+import { getSubscriptions, saveSubscriptions } from '@/lib/repo';
 import { setProductAccess, notifyTeam } from '@/lib/provision';
 import { getSecret } from '@/lib/secrets';
 import type { Subscription } from '../checkout/route';
-
-const SUBS_PATH = 'data/subscriptions.json';
 
 /** Verifica la firma de Stripe (t=...,v1=...) si hay secret configurado. */
 function stripeVerified(raw: string, header: string | null): boolean {
@@ -62,7 +60,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No se pudo identificar la suscripción' }, { status: 400 });
   }
 
-  const subs = readData<Subscription[]>(SUBS_PATH, []);
+  const subs = await getSubscriptions<Subscription[]>([]);
   const idx = subs.findIndex((s) => (subscriptionId && s.id === subscriptionId) || (paymentRef && s.paymentRef === paymentRef));
   if (idx === -1) return NextResponse.json({ error: 'Suscripción no encontrada' }, { status: 404 });
 
@@ -72,7 +70,7 @@ export async function POST(request: NextRequest) {
   sub.accessEnabled = true;
   sub.activatedAt = new Date().toISOString();
   subs[idx] = sub;
-  writeData(SUBS_PATH, subs);
+  await saveSubscriptions(subs);
 
   setProductAccess(sub.productId, { email: sub.email, company: sub.company, enabled: true, plan: sub.plan });
   notifyTeam(`💰 *Pago confirmado*\n\n${sub.company} · ${sub.productName}\n${sub.email}\nGs. ${sub.amount.toLocaleString('es-PY')}\n✅ Cuenta activada automáticamente`);

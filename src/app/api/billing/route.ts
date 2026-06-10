@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readData, writeData, isAdmin } from '@/lib/store';
+import { isAdmin } from '@/lib/store';
+import { getSubscriptions, saveSubscriptions } from '@/lib/repo';
 import { setProductAccess, notifyTeam } from '@/lib/provision';
 import type { Subscription } from '../billing/checkout/route';
 
-const SUBS_PATH = 'data/subscriptions.json';
-
 export async function GET(request: NextRequest) {
   if (!isAdmin(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  return NextResponse.json(readData<Subscription[]>(SUBS_PATH, []));
+  return NextResponse.json(await getSubscriptions<Subscription[]>([]));
 }
 
 /** Actualiza estado y/o acceso de una suscripción. Habilita/deshabilita en el sistema. */
@@ -15,7 +14,7 @@ export async function PATCH(request: NextRequest) {
   if (!isAdmin(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id, status, accessEnabled } = await request.json();
-  const subs = readData<Subscription[]>(SUBS_PATH, []);
+  const subs = await getSubscriptions<Subscription[]>([]);
   const idx = subs.findIndex((s) => s.id === id);
   if (idx === -1) return NextResponse.json({ error: 'Suscripción no encontrada' }, { status: 404 });
 
@@ -41,6 +40,6 @@ export async function PATCH(request: NextRequest) {
   }
 
   subs[idx] = sub;
-  writeData(SUBS_PATH, subs);
+  await saveSubscriptions(subs);
   return NextResponse.json({ status: 'ok', subscription: sub });
 }

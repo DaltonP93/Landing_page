@@ -118,11 +118,27 @@ Todo se edita desde **`/admin`** sin tocar código:
 > En producción los cambios se persisten en los archivos JSON. En entornos serverless de
 > solo-lectura (p. ej. Vercel) conviene migrar la persistencia a una base de datos.
 
-## 🌐 Deploy
+## 🗄️ Base de datos (PostgreSQL)
 
-Pensado para un servidor Node (Ubuntu + PM2 o similar):
+Los datos de clientes (demos, suscripciones, leads del chat, usuarios) pueden guardarse en
+**PostgreSQL** o en **archivos JSON** (modo por defecto, sin configuración).
+
+- Si definís `DATABASE_URL`, el sistema usa Postgres automáticamente.
+- Esquema en [`database/schema.sql`](database/schema.sql) (tabla JSONB + vistas de reporte).
 
 ```bash
+npm run db:schema    # crea tablas y vistas
+npm run db:migrate   # migra los datos JSON existentes a Postgres
+```
+
+## 🌐 Deploy
+
+Guía completa paso a paso (VPS Ubuntu + Nginx + PM2 + dominio + SSL + PostgreSQL):
+**[DESPLIEGUE.md](DESPLIEGUE.md)**.
+
+Resumen:
+```bash
+npm install
 npm run build
-npm start            # o: pm2 start npm --name landing -- start
+pm2 start npm --name landing -- start    # detrás de Nginx + Certbot (SSL)
 ```

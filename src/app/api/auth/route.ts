@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
 
   // Login por usuario/contraseña
   if (body.username && body.password) {
-    const result = login(body.username, body.password);
+    const result = await login(body.username, body.password);
     if (!result) return NextResponse.json({ error: 'Usuario o contraseña incorrectos' }, { status: 401 });
     return NextResponse.json({ status: 'ok', token: result.token, role: result.role });
   }

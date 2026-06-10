@@ -1,7 +1,6 @@
 import crypto from 'crypto';
-import { readData, writeData } from './store';
+import { getUsersDoc, saveUsersDoc } from './repo';
 
-const USERS_PATH = 'data/users.json';
 export type Role = 'admin' | 'editor' | 'viewer';
 const ROLE_RANK: Record<Role, number> = { viewer: 1, editor: 2, admin: 3 };
 
@@ -30,20 +29,20 @@ export function verifyPassword(pw: string, stored: string): boolean {
 }
 
 /* ── Usuarios ── */
-export function listUsers(): User[] {
-  let users = readData<User[]>(USERS_PATH, []);
+export async function listUsers(): Promise<User[]> {
+  let users = await getUsersDoc<User[]>([]);
   if (users.length === 0) {
     // Semilla inicial: admin por defecto (cambiá la contraseña al entrar)
     const username = process.env.ADMIN_USER || 'admin';
     const password = process.env.ADMIN_PASSWORD || process.env.ADMIN_API_KEY || 'admin123';
     users = [{ id: crypto.randomUUID(), username, passwordHash: hashPassword(password), role: 'admin', createdAt: new Date().toISOString() }];
-    writeData(USERS_PATH, users);
+    await saveUsersDoc(users);
   }
   return users;
 }
 
-export function saveUsers(users: User[]): void {
-  writeData(USERS_PATH, users);
+export async function saveUsers(users: User[]): Promise<void> {
+  await saveUsersDoc(users);
 }
 
 /* ── Tokens de sesión (HMAC) ── */
@@ -72,8 +71,8 @@ export function verifyToken(token: string): { username: string; role: Role } | n
   }
 }
 
-export function login(username: string, password: string): { token: string; role: Role } | null {
-  const user = listUsers().find((u) => u.username === username);
+export async function login(username: string, password: string): Promise<{ token: string; role: Role } | null> {
+  const user = (await listUsers()).find((u) => u.username === username);
   if (!user || !verifyPassword(password, user.passwordHash)) return null;
   return { token: createToken(user), role: user.role };
 }

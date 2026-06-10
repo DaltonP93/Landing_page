@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:schema": "node -e \"const{Pool}=require('pg');const fs=require('fs');new Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.DATABASE_SSL==='true'?{rejectUnauthorized:false}:undefined}).query(fs.readFileSync('database/schema.sql','utf8')).then(()=>{console.log('schema aplicado');process.exit(0)}).catch(e=>{console.error(e.message);process.exit(1)})\"",
+    "db:migrate": "node scripts/migrate-to-db.mjs"
   },
   "dependencies": {
     "framer-motion": "^12.40.0",
@@ -14,6 +16,7 @@
     "next": "16.2.7",
     "next-themes": "^0.4.6",
     "nodemailer": "^8.0.10",
+    "pg": "^8.21.0",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
@@ -21,6 +24,7 @@
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/nodemailer": "^8.0.0",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

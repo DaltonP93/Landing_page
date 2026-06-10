@@ -1,16 +1,16 @@
 import crypto from 'crypto';
-import { readData } from './store';
 import { getSecret } from './secrets';
+import { getDemos, getSubscriptions, getChatLeads } from './repo';
 
 interface HasEmail { email: string; phone?: string }
 
 const sha256 = (s: string) => crypto.createHash('sha256').update(s).digest('hex');
 
 /** Reúne y deduplica los emails de leads (demos + suscripciones + chat), hasheados SHA256. */
-export function buildEmailHashes(): string[] {
-  const demos = readData<HasEmail[]>('data/demos.json', []);
-  const subs = readData<HasEmail[]>('data/subscriptions.json', []);
-  const chat = readData<HasEmail[]>('data/chat-leads.json', []);
+export async function buildEmailHashes(): Promise<string[]> {
+  const demos = await getDemos<HasEmail[]>([]);
+  const subs = await getSubscriptions<HasEmail[]>([]);
+  const chat = await getChatLeads<HasEmail[]>([]);
   const set = new Set<string>();
   for (const r of [...demos, ...subs, ...chat]) {
     if (r.email) set.add(sha256(r.email.trim().toLowerCase()));

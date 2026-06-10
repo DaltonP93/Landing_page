@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { join } from 'path';
 import nodemailer from 'nodemailer';
 import crypto from 'crypto';
 import products from '@/data/products.json';
@@ -8,10 +6,9 @@ import site from '@/data/site.json';
 import { sendTeamEmail } from '@/lib/provision';
 import { getSecret } from '@/lib/secrets';
 import { rateLimit, clientIp } from '@/lib/rate-limit';
+import { getDemos, saveDemos as repoSaveDemos } from '@/lib/repo';
 
 const COMPANY = site.company.name;
-
-const DEMOS_PATH = join(process.cwd(), 'data/demos.json');
 
 interface DemoAccount {
   id: string;
@@ -39,18 +36,12 @@ function generatePassword(): string {
   return crypto.randomBytes(4).toString('hex') + crypto.randomInt(10, 99);
 }
 
-function loadDemos(): DemoAccount[] {
-  if (!existsSync(DEMOS_PATH)) return [];
-  return JSON.parse(readFileSync(DEMOS_PATH, 'utf-8'));
+async function loadDemos(): Promise<DemoAccount[]> {
+  return getDemos<DemoAccount[]>([]);
 }
 
-function saveDemos(demos: DemoAccount[]) {
-  const dir = join(process.cwd(), 'data');
-  if (!existsSync(dir)) {
-    const { mkdirSync } = require('fs');
-    mkdirSync(dir, { recursive: true });
-  }
-  writeFileSync(DEMOS_PATH, JSON.stringify(demos, null, 2), 'utf-8');
+async function saveDemos(demos: DemoAccount[]): Promise<void> {
+  await repoSaveDemos(demos);
 }
 
 function getProductUrls(productId: string): { appUrl: string; apiUrl: string } {
@@ -233,7 +224,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Producto no válido' }, { status: 400 });
   }
 
-  const demos = loadDemos();
+  const demos = await loadDemos();
   const existing = demos.find((d) => d.email === email && d.productId === productId && d.status === 'active');
   if (existing) {
     return NextResponse.json({ error: 'Ya tenés una demo activa para este producto. Revisá tu email.' }, { status: 409 });
@@ -260,7 +251,7 @@ export async function POST(request: NextRequest) {
   };
 
   demos.push(account);
-  saveDemos(demos);
+  await saveDemos(demos);
 
   // Fire and forget — don't block the response
   Promise.allSettled([
@@ -287,6 +278,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const demos = loadDemos();
+  const demos = await loadDemos();
   return NextResponse.json(demos);
 }
